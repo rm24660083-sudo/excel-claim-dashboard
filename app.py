@@ -5,7 +5,9 @@ import plotly.express as px
 st.set_page_config(page_title="📊 SUP Defect & Grade Analysis + AI Advisor", layout="wide")
 st.title("📊 SUP Defect & Grade Analysis + AI Advisor")
 
+# -----------------------------
 # ฟังก์ชัน AI Advisor (Advance)
+# -----------------------------
 def advanced_ai_advisor(df):
     tips = []
     if df.empty:
@@ -14,7 +16,6 @@ def advanced_ai_advisor(df):
     latest_q = df["Quarter"].max()
     q_data = df[df["Quarter"] == latest_q]
 
-    # SUP ที่มี defect สูงสุด
     if "SUP" in q_data.columns:
         sup_counts = q_data["SUP"].value_counts()
         if not sup_counts.empty:
@@ -22,33 +23,31 @@ def advanced_ai_advisor(df):
             top_count = sup_counts.iloc[0]
             tips.append(f"🏭 SUP {top_sup} มี defect {top_count} ครั้งใน Q{latest_q} — ควรติดตามใกล้ชิด")
 
-    # Defect ที่ recurring
     if "Defect" in q_data.columns:
         defect_counts = q_data["Defect"].value_counts()
         if not defect_counts.empty:
             top_defect = defect_counts.index[0]
-            tips.append(f"🔁 Defect '{top_defect}' เกิดซ้ำบ่อยที่สุดใน Q{latest_q} — ควรตรวจสอบกระบวนการที่เกี่ยวข้อง")
+            tips.append(f"🔁 Defect '{top_defect}' เกิดซ้ำบ่อยที่สุดใน Q{latest_q}")
 
-    # เกรดแกรมที่เกี่ยวข้อง
     if {"Grade","Defect"}.issubset(q_data.columns):
         grade_defect = q_data.groupby("Grade")["Defect"].count().sort_values(ascending=False)
         if not grade_defect.empty:
             top_grade = grade_defect.index[0]
-            tips.append(f"📦 เกรดแกรม {top_grade} มี defect สูงสุดใน Q{latest_q} — ควรตรวจสอบคุณภาพวัตถุดิบ/การผลิต")
+            tips.append(f"📦 เกรดแกรม {top_grade} มี defect สูงสุดใน Q{latest_q}")
 
-    # แนวทางเดือนถัดไป
     if "Month" in df.columns:
         next_month = df["Month"].max() + 1
-        tips.append(f"📅 เดือนถัดไป (เดือน {next_month}) ควรโฟกัส SUP และ defect ที่ recurring เป็นพิเศษ")
+        tips.append(f"📅 เดือนถัดไป (เดือน {next_month}) ควรโฟกัส SUP และ defect ที่ recurring")
 
-    # ข้อเสนอแนะทั่วไป
-    tips.append("✅ แนะนำทำ CAPA (Corrective Action) ร่วมกับ SUP ที่มี defect สูงสุด")
-    tips.append("🧪 ควรสุ่มตรวจคุณภาพเกรดแกรมที่มี defect สูงก่อนการผลิตล็อตใหม่")
+    tips.append("✅ ทำ CAPA (Corrective Action) ร่วมกับ SUP ที่ defect สูงสุด")
+    tips.append("🧪 สุ่มตรวจคุณภาพเกรดแกรมที่ defect สูงก่อนผลิตล็อตใหม่")
 
     return tips
 
 
+# -----------------------------
 # อัปโหลดไฟล์
+# -----------------------------
 uploaded_file = st.file_uploader("อัปโหลดไฟล์ Excel", type=["xlsx"])
 
 if uploaded_file:
@@ -82,36 +81,46 @@ if uploaded_file:
         df["Month"] = df[base_col].dt.month
         df["Quarter"] = df[base_col].dt.quarter
 
-    # --- 1. SUP → Defect ---
-    st.subheader("🔍 ข้อผิดพลาดของแต่ละ SUP")
-    if {"SUP","Defect"}.issubset(df.columns):
-        sup_defect = df.groupby(["SUP","Defect"]).size().reset_index(name="Count")
-        st.dataframe(sup_defect)
-        fig = px.bar(sup_defect, x="SUP", y="Count", color="Defect",
-                     title="Defect Breakdown by SUP", barmode="stack")
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.warning("⚠️ ไม่พบคอลัมน์ SUP หรือ Defect")
+    # -----------------------------
+    # วิเคราะห์ SUP ทีละราย (Expander)
+    # -----------------------------
+    st.subheader("🔍 วิเคราะห์ SUP ทีละราย")
 
-    # --- 2. SUP → Quarter ---
-    st.subheader("📅 ข้อผิดพลาดรายไตรมาส")
-    if {"SUP","Quarter"}.issubset(df.columns):
-        sup_quarter = df.groupby(["Quarter","SUP"]).size().reset_index(name="Count")
-        st.dataframe(sup_quarter)
-        fig2 = px.bar(sup_quarter, x="Quarter", y="Count", color="SUP",
-                      title="Defect Count by Quarter", barmode="group")
-        st.plotly_chart(fig2, use_container_width=True)
+    if "SUP" in df.columns:
+        for sup in df["SUP"].unique():
+            with st.expander(f"SUP: {sup}", expanded=False):
+                sup_df = df[df["SUP"] == sup]
 
-    # --- 3. SUP → Grade ---
-    st.subheader("📦 เกรดแกรมที่มีปัญหาในแต่ละ SUP")
-    if {"SUP","Grade"}.issubset(df.columns):
-        sup_grade = df.groupby(["SUP","Grade"]).size().reset_index(name="Count")
-        st.dataframe(sup_grade)
-        fig3 = px.bar(sup_grade, x="SUP", y="Count", color="Grade",
-                      title="Defect by SUP and Grade", barmode="stack")
-        st.plotly_chart(fig3, use_container_width=True)
+                # Defect breakdown
+                if "Defect" in sup_df.columns:
+                    defect_table = sup_df["Defect"].value_counts().reset_index()
+                    defect_table.columns = ["Defect", "Count"]
+                    st.markdown("**รายละเอียดข้อผิดพลาด (Defect Breakdown)**")
+                    st.dataframe(defect_table)
+                    st.plotly_chart(px.bar(defect_table, x="Defect", y="Count",
+                                           title=f"Defect Breakdown - {sup}"), use_container_width=True)
 
-    # --- 4. AI Advisor ---
+                # Quarter breakdown
+                if "Quarter" in sup_df.columns:
+                    quarter_table = sup_df["Quarter"].value_counts().reset_index()
+                    quarter_table.columns = ["Quarter", "Count"]
+                    st.markdown("**ข้อผิดพลาดรายไตรมาส (Quarter Breakdown)**")
+                    st.dataframe(quarter_table)
+                    st.plotly_chart(px.bar(quarter_table, x="Quarter", y="Count",
+                                           title=f"Quarter Breakdown - {sup}"), use_container_width=True)
+
+                # Grade breakdown
+                if "Grade" in sup_df.columns:
+                    grade_table = sup_df["Grade"].value_counts().reset_index()
+                    grade_table.columns = ["Grade", "Count"]
+                    st.markdown("**เกรดแกรมที่มีปัญหา (Grade Breakdown)**")
+                    st.dataframe(grade_table)
+                    st.plotly_chart(px.bar(grade_table, x="Grade", y="Count",
+                                           title=f"Grade Breakdown - {sup}"), use_container_width=True)
+
+    # -----------------------------
+    # AI Advisor
+    # -----------------------------
     st.subheader("🧠 AI Advisor (Advance)")
     if "Quarter" in df.columns:
         tips = advanced_ai_advisor(df)
