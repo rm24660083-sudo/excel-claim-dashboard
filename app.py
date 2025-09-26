@@ -21,7 +21,7 @@ def advanced_ai_advisor(df):
         if not sup_counts.empty:
             top_sup = sup_counts.index[0]
             top_count = sup_counts.iloc[0]
-            tips.append(f"🏭 SUP {top_sup} มี defect {top_count} ครั้งใน Q{latest_q} — ควรติดตามใกล้ชิด")
+            tips.append(f"🏭 SUP {top_sup} มี defect {top_count} ครั้งใน Q{latest_q}")
 
     if "Defect" in q_data.columns:
         defect_counts = q_data["Defect"].value_counts()
@@ -34,13 +34,6 @@ def advanced_ai_advisor(df):
         if not grade_defect.empty:
             top_grade = grade_defect.index[0]
             tips.append(f"📦 เกรดแกรม {top_grade} มี defect สูงสุดใน Q{latest_q}")
-
-    if "Month" in df.columns:
-        next_month = df["Month"].max() + 1
-        tips.append(f"📅 เดือนถัดไป (เดือน {next_month}) ควรโฟกัส SUP และ defect ที่ recurring")
-
-    tips.append("✅ ทำ CAPA (Corrective Action) ร่วมกับ SUP ที่ defect สูงสุด")
-    tips.append("🧪 สุ่มตรวจคุณภาพเกรดแกรมที่ defect สูงก่อนผลิตล็อตใหม่")
 
     return tips
 
@@ -82,41 +75,46 @@ if uploaded_file:
         df["Quarter"] = df[base_col].dt.quarter
 
     # -----------------------------
-    # วิเคราะห์ SUP ทีละราย (Expander)
+    # 1. ข้อผิดพลาดของแต่ละ SUP
     # -----------------------------
-    st.subheader("🔍 วิเคราะห์ SUP ทีละราย")
-
-    if "SUP" in df.columns:
+    st.subheader("🔍 ข้อผิดพลาดของแต่ละ SUP")
+    if {"SUP","Defect"}.issubset(df.columns):
         for sup in df["SUP"].unique():
-            with st.expander(f"SUP: {sup}", expanded=False):
-                sup_df = df[df["SUP"] == sup]
+            st.markdown(f"### SUP: {sup}")
+            sup_df = df[df["SUP"] == sup]
+            defect_table = sup_df["Defect"].value_counts().reset_index()
+            defect_table.columns = ["Defect", "Count"]
+            st.dataframe(defect_table)
+            st.plotly_chart(px.bar(defect_table, x="Defect", y="Count",
+                                   title=f"Defect Breakdown - {sup}"), use_container_width=True)
 
-                # Defect breakdown
-                if "Defect" in sup_df.columns:
-                    defect_table = sup_df["Defect"].value_counts().reset_index()
-                    defect_table.columns = ["Defect", "Count"]
-                    st.markdown("**รายละเอียดข้อผิดพลาด (Defect Breakdown)**")
-                    st.dataframe(defect_table)
-                    st.plotly_chart(px.bar(defect_table, x="Defect", y="Count",
-                                           title=f"Defect Breakdown - {sup}"), use_container_width=True)
+    # -----------------------------
+    # 2. ข้อผิดพลาดรายไตรมาส
+    # -----------------------------
+    st.subheader("📅 ข้อผิดพลาดรายไตรมาส")
+    if {"SUP","Quarter"}.issubset(df.columns):
+        for sup in df["SUP"].unique():
+            st.markdown(f"### SUP: {sup}")
+            sup_df = df[df["SUP"] == sup]
+            quarter_table = sup_df["Quarter"].value_counts().reset_index()
+            quarter_table.columns = ["Quarter", "Count"]
+            st.dataframe(quarter_table)
+            st.plotly_chart(px.bar(quarter_table, x="Quarter", y="Count",
+                                   title=f"Quarter Breakdown - {sup}"), use_container_width=True)
 
-                # Quarter breakdown
-                if "Quarter" in sup_df.columns:
-                    quarter_table = sup_df["Quarter"].value_counts().reset_index()
-                    quarter_table.columns = ["Quarter", "Count"]
-                    st.markdown("**ข้อผิดพลาดรายไตรมาส (Quarter Breakdown)**")
-                    st.dataframe(quarter_table)
-                    st.plotly_chart(px.bar(quarter_table, x="Quarter", y="Count",
-                                           title=f"Quarter Breakdown - {sup}"), use_container_width=True)
-
-                # Grade breakdown
-                if "Grade" in sup_df.columns:
-                    grade_table = sup_df["Grade"].value_counts().reset_index()
-                    grade_table.columns = ["Grade", "Count"]
-                    st.markdown("**เกรดแกรมที่มีปัญหา (Grade Breakdown)**")
-                    st.dataframe(grade_table)
-                    st.plotly_chart(px.bar(grade_table, x="Grade", y="Count",
-                                           title=f"Grade Breakdown - {sup}"), use_container_width=True)
+    # -----------------------------
+    # 3. เกรดแกรมที่มีปัญหาในแต่ละ SUP
+    # -----------------------------
+    st.subheader("📦 เกรดแกรมที่มีปัญหาในแต่ละ SUP")
+    if {"SUP","Grade"}.issubset(df.columns):
+        for sup in df["SUP"].unique():
+            st.markdown(f"### SUP: {sup}")
+            sup_df = df[df["SUP"] == sup]
+            grade_table = sup_df["Grade"].value_counts().reset_index()
+            grade_table.columns = ["Grade", "Count"]
+            st.dataframe(grade_table)
+            st.plotly_chart(px.bar(grade_table, x="Grade", y="Count",
+                                   title=f"Grade Breakdown - {sup}"), use_container_width=True)
 
     # -----------------------------
     # AI Advisor
@@ -126,5 +124,3 @@ if uploaded_file:
         tips = advanced_ai_advisor(df)
         for t in tips:
             st.write("- " + t)
-    else:
-        st.warning("⚠️ ไม่มีข้อมูล Quarter สำหรับการวิเคราะห์ AI Advisor")
