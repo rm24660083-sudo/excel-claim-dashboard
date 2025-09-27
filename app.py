@@ -294,22 +294,21 @@ if uploaded_file:
     else:
         st.warning("⚠️ ไม่พบคอลัมน์ Month หรือ Defect")
 
-        # -----------------------------
-    # Advisor Column (Unique per SUP)
+    # -----------------------------
+    # Advisor Column (Unique per SUP + Defect)
     # -----------------------------
     st.subheader("💡 คำแนะนำอัตโนมัติ (Advisor)")
 
     if "SUP" in df.columns and "Defect" in df.columns:
         df["Advice"] = df["Defect"].apply(advise_for)
 
-        # รวม Advice ไม่ให้ซ้ำในแต่ละ SUP
-        advisor_summary = (
-            df.groupby("SUP")[["Advice"]]
-              .agg(lambda x: ", ".join(sorted(set(x))))
-              .reset_index()
-        )
+        # ลบแถวที่ซ้ำกัน (SUP + Defect + Advice)
+        advisor_unique = df[["SUP","Defect","Advice"]].drop_duplicates()
 
-        st.dataframe(advisor_summary, hide_index=True)
+        # เรียงให้อ่านง่าย
+        advisor_unique = advisor_unique.sort_values(["SUP","Defect"])
+
+        st.dataframe(advisor_unique, hide_index=True)
     else:
         st.warning("⚠️ ไม่พบคอลัมน์ SUP หรือ Defect")
 
@@ -351,5 +350,6 @@ if uploaded_file:
     def escape_html(s):
         """Escape อักขระพิเศษ ป้องกัน HTML injection"""
         return html.escape(str(s))
+
 
 
