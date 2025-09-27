@@ -241,6 +241,28 @@ if uploaded_file:
         else:
             st.warning("⚠️ ไม่พบคอลัมน์ Month / SUP / Defect")
 
-
-
-
+        elif file_type == "เคลมแผ่น":
+            rename_map_sheet = {
+            "Supplier": "SUP",
+            "DefectType": "Defect",
+            "Grade": "Grade",
+            "Date": "Date",
+            "Lot": "Lot",
+            "Thickness": "Thickness",
+            "Size": "Size",
+            "ClaimReason": "Reason"
+            }
+            df = df.rename(columns={c: rename_map_sheet.get(c, c) for c in df.columns})
+    
+        if "Date" in df.columns:
+            df["Date"] = pd.to_datetime(df["Date"], errors="coerce", dayfirst=True)
+            df["MonthKey"] = df["Date"].dt.strftime("%Y-%m")
+            df["Month"] = df["Date"].dt.month
+            df["Quarter"] = df["Date"].dt.quarter
+        else:
+            df["MonthKey"] = "ไม่ระบุ"
+            df["Month"] = None
+            df["Quarter"] = None
+    
+            df["RootCause"] = df["Defect"].apply(map_root_cause)
+            df["Advice"] = df["Defect"].apply(advise_for)
