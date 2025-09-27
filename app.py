@@ -150,13 +150,13 @@ if uploaded_file:
         fig2 = px.pie(defect_count, names="Defect", values="Count", title="Defect Breakdown")
         st.plotly_chart(fig2, use_container_width=True)
 
-            # 🔹 แนวโน้มรายเดือน (จำนวนเคส) แยกตาม SUP
-            st.subheader("📅 แนวโน้มรายเดือน (จำนวนเคส) แยกตาม SUP")
-            monthly_sup = (
-                df.groupby(["MonthKey", "SUP"])
-                  .size()
-                  .reset_index(name="Count")
-                  .sort_values("MonthKey")
+        # 🔹 แนวโน้มรายเดือน (จำนวนเคส) แยกตาม SUP
+        st.subheader("📅 แนวโน้มรายเดือน (จำนวนเคส) แยกตาม SUP")
+        monthly_sup = (
+            df.groupby(["MonthKey", "SUP"])
+                .size()
+                .reset_index(name="Count")
+                .sort_values("MonthKey")
             )
             
             fig3 = px.line(
@@ -175,7 +175,7 @@ if uploaded_file:
                 height=500
             )
             
-            st.plotly_chart(fig3, use_container_width=True)
+        st.plotly_chart(fig3, use_container_width=True)
 
         # 🔹 ตารางคำแนะนำ
         st.subheader("💡 คำแนะนำอัตโนมัติ (Advisor)")
@@ -240,5 +240,6 @@ if uploaded_file:
                 st.info("✅ ไม่พบแนวโน้ม SUP หรืออาการที่ควรเฝ้าระวังเป็นพิเศษในเดือนถัดไป")
         else:
             st.warning("⚠️ ไม่พบคอลัมน์ Month / SUP / Defect")
+
 
 
