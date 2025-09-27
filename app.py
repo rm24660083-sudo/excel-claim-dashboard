@@ -4,26 +4,15 @@ import plotly.express as px
 import numpy as np
 import re
 import html
-
-# -----------------------------
-# Config
-# -----------------------------
-
-st.set_page_config(page_title="📊 วิเคราะห์ปัญหาเคลมแผ่น", layout="wide")
-
-# -----------------------------
-# Logo + Credit (เหนือ Title)
-# -----------------------------
-import streamlit as st
 import os
 
-# หา path ของไฟล์ Logo.png ที่อยู่โฟลเดอร์เดียวกับ app.py
+# -----------------------------
+# Config + Logo + Credit
+# -----------------------------
+st.set_page_config(page_title="📊 วิเคราะห์ปัญหาเคลมแผ่น", layout="wide")
+
 logo_path = os.path.join(os.path.dirname(__file__), "Logo.png")
-
-# แสดงโลโก้
 st.image(logo_path, width=120)
-
-# แสดงเครดิตใต้โลโก้
 st.markdown(
     """
     <div style="font-size:16px; font-weight:bold; margin-top:5px;">
@@ -34,8 +23,9 @@ st.markdown(
 )
 
 st.title("📊 รายงานวิเคราะห์ข้อบกพร่องจากเคลมม้วน")
+
 # -----------------------------
-# Utility Functions (ส่วนที่ 7)
+# Utility Functions
 # -----------------------------
 def median(arr):
     if len(arr) == 0:
@@ -87,9 +77,8 @@ def advise_for(defect):
     return "กำหนดแผนตรวจจุดวิกฤตในไลน์ + sampling เพิ่มเติมช่วงรับเข้า"
 
 # -----------------------------
-# Upload file (ส่วนที่ 1)
+# Upload + File Type Selection
 # -----------------------------
-# 🔹 เลือกประเภทไฟล์ก่อนอัปโหลด
 file_type = st.selectbox("📂 เลือกประเภทข้อมูล", ["เคลมม้วน", "เคลมแผ่น"])
 uploaded_file = st.file_uploader("📄 อัปโหลดไฟล์ Excel", type=["xlsx"])
 
@@ -97,7 +86,6 @@ if uploaded_file:
     df = pd.read_excel(uploaded_file)
 
     if file_type == "เคลมม้วน":
-        # 🔹 เริ่มวิเคราะห์เคลมม้วน
         rename_map = {
             "SUP": "SUP", "ซัพพลายเออร์": "SUP", "Supplier": "SUP",
             "สิ่งที่ไม่เป็นไปตามข้อกำหนด": "Defect", "ข้อบกพร่อง": "Defect", "อาการ": "Defect",
@@ -114,74 +102,48 @@ if uploaded_file:
             df["Quarter"] = df["Date"].dt.quarter
         else:
             df["MonthKey"] = "ไม่ระบุ"
+            df["Month"] = None
+            df["Quarter"] = None
 
-        # 🔹 RootCause + Advice
         df["RootCause"] = df["Defect"].apply(map_root_cause)
         df["Advice"] = df["Defect"].apply(advise_for)
 
-        # 🔹 KPI
+        # -----------------------------
+        # KPI Summary
+        # -----------------------------
         st.subheader("📌 สรุปภาพรวม")
         col1, col2, col3 = st.columns(3)
         col1.metric("จำนวนรายการข้อบกพร่อง", len(df))
         col2.metric("ซัพพลายเออร์ที่เกี่ยวข้อง", df["SUP"].nunique())
         col3.metric("ประเภทข้อบกพร่องที่พบ", df["Defect"].nunique())
 
-        # 🔹 กราฟ SUP
-        st.subheader("🏭 อันดับ SUP โดยจำนวนข้อบกพร่อง (Top 12)")
-        sup_count = (
-            df.groupby("SUP")
-              .size()
-              .reset_index(name="Count")
-              .sort_values("Count", ascending=False)
-              .head(12)
-        )
-        fig1 = px.bar(sup_count, x="SUP", y="Count", text="Count", title="จำนวน defect ต่อ SUP")
-        st.plotly_chart(fig1, use_container_width=True)
+        # -----------------------------
+        # Monthly Trend by SUP
+        # -----------------------------
+        st.subheader("📅 แนวโน้มรายเดือน (จำนวนเคส) แยกตาม SUP")
+        monthly_sup = df.groupby(["MonthKey", "SUP"]).size().reset_index(name="Count")
+        fig_monthly = px.line(monthly_sup, x="MonthKey", y="Count", color="SUP", markers=True)
+        st.plotly_chart(fig_monthly, use_container_width=True)
 
-        # 🔹 กราฟ Defect
-        st.subheader("🧩 สัดส่วนประเภทข้อบกพร่อง (Top 12)")
-        defect_count = (
-            df.groupby("Defect")
-              .size()
-              .reset_index(name="Count")
-              .sort_values("Count", ascending=False)
-              .head(12)
-        )
-        fig2 = px.pie(defect_count, names="Defect", values="Count", title="Defect Breakdown")
-        st.plotly_chart(fig2, use_container_width=True)
-
-        # 🔹 แนวโน้มรายเดือน
-        st.subheader("📅 แนวโน้มรายเดือน (จำนวนเคส)")
-        monthly = (
-            df.groupby("MonthKey")
-              .size()
-              .reset_index(name="Count")
-              .sort_values("MonthKey")
-        )
-        fig3 = px.line(monthly, x="MonthKey", y="Count", markers=True, title="จำนวน defect รายเดือน")
-        st.plotly_chart(fig3, use_container_width=True)
-
-        # 🔹 ตารางคำแนะนำ
+        # -----------------------------
+        # Advisor Table
+        # -----------------------------
         st.subheader("💡 คำแนะนำอัตโนมัติ (Advisor)")
         advisor_unique = df[["SUP", "Defect", "Advice"]].drop_duplicates().sort_values(["SUP", "Defect"])
         st.dataframe(advisor_unique, hide_index=True)
 
-        # 🔹 รายละเอียดข้อผิดพลาด
+        # -----------------------------
+        # Detail Table
+        # -----------------------------
         st.subheader("📋 รายละเอียดข้อผิดพลาดตาม SUP")
-        detail = (
-            df.groupby(["SUP", "Defect", "Advice", "Grade"])
-              .size()
-              .reset_index(name="จำนวนเคส")
-              .sort_values(["SUP", "Defect"])
-        )
-        st.dataframe(detail, hide_index=True)
+        detail = df.groupby(["SUP", "Defect", "Advice", "Grade"]).size().reset_index(name="จำนวนเคส")
+        st.dataframe(detail.sort_values(["SUP", "Defect"]), hide_index=True)
 
-# -----------------------------
-# 🔮 ข้อควรระวังล่วงหน้าในเดือนถัดไป
-# -----------------------------
-st.subheader("🔮 ข้อควรระวังล่วงหน้าในเดือนถัดไป")
-
-if "Month" in df.columns and "SUP" in df.columns and "Defect" in df.columns:
+        # -----------------------------
+        # Forecast: Next Month Watchouts
+        # -----------------------------
+        st.subheader("🔮 ข้อควรระวังล่วงหน้าในเดือนถัดไป")
+        if "Month" in df.columns and "SUP" in df.columns and "Defect" in df.columns:
     # วิเคราะห์แนวโน้มย้อนหลัง 3 เดือน
     recent_months = sorted(df["Month"].dropna().unique())[-3:]
     recent_df = df[df["Month"].isin(recent_months)]
