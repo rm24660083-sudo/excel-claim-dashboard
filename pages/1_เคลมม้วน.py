@@ -125,3 +125,86 @@ if uploaded_file:
         title="จำนวนเคสต่อ SUP + Grade (ราย Quarter)"
     )
     st.plotly_chart(fig_sup_grade, use_container_width=True)
+
+import pandas as pd
+import plotly.express as px
+import streamlit as st
+from statsmodels.tsa.holtwinters import ExponentialSmoothing
+
+st.subheader("🤖 AI วิเคราะห์เชิงลึก")
+
+# -----------------------------
+# 1) Watchlist SUP + Defect
+# -----------------------------
+sup_defect = (
+    df.groupby(["SUP", "Defect"])
+      .size()
+      .reset_index(name="จำนวนเคส")
+      .sort_values("จำนวนเคส", ascending=False)
+)
+
+threshold = sup_defect["จำนวนเคส"].mean()
+watchlist = sup_defect[sup_defect["จำนวนเคส"] > threshold]
+
+st.markdown("**📌 SUP ที่ต้องเฝ้าระวัง (เกินค่าเฉลี่ย):**")
+st.dataframe(watchlist, hide_index=True)
+
+# -----------------------------
+# 2) คำแนะนำอัตโนมัติ
+# -----------------------------
+st.subheader("💡 คำแนะนำอัตโนมัติ")
+
+for _, row in watchlist.iterrows():
+    sup = row["SUP"]
+    defect = row["Defect"]
+    count = row["จำนวนเคส"]
+
+    if "ขอบ" in defect:
+        advice = "ตรวจสอบแรงดึงและการตั้งค่าเครื่องจักร"
+    elif "คราบ" in defect:
+        advice = "ตรวจสอบระบบหล่อลื่นและการทำความสะอาด"
+    elif "แตก" in defect:
+        advice = "ตรวจสอบคุณภาพวัตถุดิบและแรงกด"
+    else:
+        advice = "ตรวจสอบกระบวนการผลิตและการควบคุมคุณภาพ"
+
+    st.info(f"SUP {sup} พบปัญหา {defect} {count} ครั้ง → แนวทาง: {advice}")
+
+# -----------------------------
+# 3) Forecasting (พยากรณ์เดือนถัดไป)
+# -----------------------------
+st.subheader("📈 การพยากรณ์ปัญหาเดือนถัดไป")
+
+# เตรียมข้อมูลรายเดือน
+monthly = (
+    df.groupby(["MonthKey", "SUP", "Defect"])
+      .size()
+      .reset_index(name="จำนวนเคส")
+)
+
+forecast_results = []
+
+for (sup, defect), group in monthly.groupby(["SUP", "Defect"]):
+    ts = group.set_index("MonthKey")["จำนวนเคส"].asfreq("MS")  # MS = Month Start
+    ts = ts.fillna(0)
+
+    if len(ts) >= 3:  # ต้องมีข้อมูลอย่างน้อย 3 เดือน
+        model = ExponentialSmoothing(ts, trend="add", seasonal=None)
+        fit = model.fit()
+        pred = fit.forecast(1)  # พยากรณ์ 1 เดือนถัดไป
+        forecast_results.append([sup, defect, int(pred.values[0])])
+
+forecast_df = pd.DataFrame(forecast_results, columns=["SUP", "Defect", "คาดการณ์เดือนหน้า"])
+
+st.dataframe(forecast_df, hide_index=True)
+
+# กราฟรวม
+if not forecast_df.empty:
+    fig = px.bar(
+        forecast_df,
+        x="SUP",
+        y="คาดการณ์เดือนหน้า",
+        color="Defect",
+        title="📊 คาดการณ์จำนวนปัญหา SUP + Defect เดือนถัดไป"
+    )
+    st.plotly_chart(fig, use_container_width=True)
