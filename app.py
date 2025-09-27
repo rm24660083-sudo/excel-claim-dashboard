@@ -89,7 +89,19 @@ def advise_for(defect):
 # -----------------------------
 # Upload file (ส่วนที่ 1)
 # -----------------------------
+# แทนที่ส่วนเดิมที่มี st.file_uploader
+file_type = st.selectbox("📂 เลือกประเภทข้อมูล", ["เคลมม้วน", "เคลมแผ่น"])
 uploaded_file = st.file_uploader("📄 อัปโหลดไฟล์ Excel", type=["xlsx"])
+if uploaded_file:
+    df = pd.read_excel(uploaded_file)
+
+    if file_type == "เคลมม้วน":
+        process_claim_roll(df)
+
+    elif file_type == "เคลมแผ่น":
+        process_claim_sheet(df)
+        
+def process_claim_roll(df):
 
 if uploaded_file:
     df = pd.read_excel(uploaded_file)
@@ -381,12 +393,6 @@ if uploaded_file:
         """Escape อักขระพิเศษ ป้องกัน HTML injection"""
         return html.escape(str(s))
 
-
-
-
-
-
-
-
-
-
+def process_claim_sheet(df):
+    st.title("📊 รายงานวิเคราะห์ข้อบกพร่องจากเคลมแผ่น")
+    # 👇 เขียน logic ใหม่สำหรับเคลมแผ่น เช่น rename column, plot, summary ฯลฯ
