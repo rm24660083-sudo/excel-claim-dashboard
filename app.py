@@ -27,7 +27,7 @@ st.image(logo_path, width=120)
 st.markdown(
     """
     <div style="font-size:16px; font-weight:bold; margin-top:5px;">
-        Powered by <span style="color:#d62728;">The Beyonder RM</span>
+        Powered by <span style="color:#d62728;">ยุทธพิชัย ไก่ฟ้า หัวหน้าแผนก Sup-Ramaterial</span>
     </div>
     """,
     unsafe_allow_html=True
@@ -380,6 +380,7 @@ if uploaded_file:
     def escape_html(s):
         """Escape อักขระพิเศษ ป้องกัน HTML injection"""
         return html.escape(str(s))
+
 
 
 
