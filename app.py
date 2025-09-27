@@ -5,184 +5,159 @@ import numpy as np
 import re
 import html
 import os
-
 # -----------------------------
 # Config + Logo + Credit
 # -----------------------------
-st.set_page_config(page_title="📊 วิเคราะห์ปัญหาเคลมแผ่น", layout="wide")
-
+st.set_page_config(page_title = "📊 วิเคราะห์ปัญหาเคลมแผ่น", layout="wide")
 logo_path = os.path.join(os.path.dirname(__file__), "Logo.png")
-st.image(logo_path, width=120)
+st.image(logo_path, width = 120)
 st.markdown(
-    """
-    <div style="font-size:16px; font-weight:bold; margin-top:5px;">
-        Powered by <span style="color:#d62728;">ยุทธพิชัย ไก่ฟ้า หัวหน้าแผนก Sup-Ramaterial</span>
-    </div>
-    """,
-    unsafe_allow_html=True
+"""
+<div style = "font-size:16px ;  font-weight:bold;  margin-top:5px; ">
+Powered by <span style = "color:#d62728 ; ">ยุทธพิชัย ไก่ฟ้า หัวหน้าแผนก Sup-Ramaterial</span>
+</div>
+""",
+unsafe_allow_html = True
 )
-
 st.title("📊 รายงานวิเคราะห์ข้อบกพร่องจากเคลมม้วน")
-
 # -----------------------------
 # Utility Functions
 # -----------------------------
 def median(arr):
-    if len(arr) == 0:
-        return 0
-    return float(np.median(arr))
-
+if len(arr) = = 0:
+return 0
+return float(np.median(arr))
 def escape_html(s):
-    return html.escape(str(s))
-
+return html.escape(str(s))
 root_cause_rules = [
-    (r"carl?ender|คาเลนเดอร์|คาร์เลนเดอร์|จุดดำ", "รอยลูกรีด/ผิวหน้า (Calender mark / Black spots)"),
-    (r"ยับ|รอยยับ|ยับในม้วน|ม้วนหย่อน", "Tension/การกรอ-ขนส่ง"),
-    (r"รอยเส้น|สันนูน", "การรีด/การกรอ/ตั้งค่าลูกกลิ้ง"),
-    (r"กระดาษสกปรก|หัวม้วนสกปรก|กระดาษด่าง|ด่าง", "การปนเปื้อน/สิ่งสกปรกในระบบ"),
-    (r"wax|คราบ", "คราบ WAX/เคมีค้าง"),
-    (r"ความชื้น|Cobb", "ความชื้น/การอบไม่เหมาะสม"),
-    (r"Bursting", "ความแข็งแรงเนื้อกระดาษต่ำ (Bursting)"),
-    (r"แกรมสูง|แกรมต่ำ", "น้ำหนักพื้นฐานคลาดเคลื่อน (Basis weight)"),
-    (r"หน้ากว้าง.*(ต่ำ|หด|เกิน|สูง)|หน้ากว้างไม่เป็นไปตาม", "ความกว้างคลาดเคลื่อน (Slitting/Trim control)"),
-    (r"แกนเบี้ยว|หัวม้วนแตก", "แกน/การแพ็ค/ขนส่ง"),
-    (r"รอยกระแทก|เศษกรีด|รอยทับยาง", "Handling/ขนส่ง/ใบมีด"),
-    (r"สีตก", "การเคลือบ/หมึก/โค้ทติ้ง (Color off-spec)")
+(r"carl?ender|คาเลนเดอร์|คาร์เลนเดอร์|จุดดำ", "รอยลูกรีด/ผิวหน้า (Calender mark / Black spots)"),
+(r"ยับ|รอยยับ|ยับในม้วน|ม้วนหย่อน", "Tension/การกรอ-ขนส่ง"),
+(r"รอยเส้น|สันนูน", "การรีด/การกรอ/ตั้งค่าลูกกลิ้ง"),
+(r"กระดาษสกปรก|หัวม้วนสกปรก|กระดาษด่าง|ด่าง", "การปนเปื้อน/สิ่งสกปรกในระบบ"),
+(r"wax|คราบ", "คราบ WAX/เคมีค้าง"),
+(r"ความชื้น|Cobb", "ความชื้น/การอบไม่เหมาะสม"),
+(r"Bursting", "ความแข็งแรงเนื้อกระดาษต่ำ (Bursting)"),
+(r"แกรมสูง|แกรมต่ำ", "น้ำหนักพื้นฐานคลาดเคลื่อน (Basis weight)"),
+(r"หน้ากว้าง.*(ต่ำ|หด|เกิน|สูง)|หน้ากว้างไม่เป็นไปตาม", "ความกว้างคลาดเคลื่อน (Slitting/Trim control)"),
+(r"แกนเบี้ยว|หัวม้วนแตก", "แกน/การแพ็ค/ขนส่ง"),
+(r"รอยกระแทก|เศษกรีด|รอยทับยาง", "Handling/ขนส่ง/ใบมีด"),
+(r"สีตก", "การเคลือบ/หมึก/โค้ทติ้ง (Color off-spec)")
 ]
-
 def map_root_cause(defect_text):
-    if not defect_text or pd.isna(defect_text):
-        return "อื่น ๆ/ไม่ระบุ"
-    for pattern, cause in root_cause_rules:
-        if re.search(pattern, str(defect_text), flags=re.IGNORECASE):
-            return cause
-    return "อื่น ๆ/ไม่ระบุ"
-
+if not defect_text or pd.isna(defect_text):
+return "อื่น ๆ/ไม่ระบุ"
+for pattern, cause in root_cause_rules:
+if re.search(pattern, str(defect_text), flags = re.IGNORECASE):
+return cause
+return "อื่น ๆ/ไม่ระบุ"
 def advise_for(defect):
-    t = str(defect)
-    if re.search(r"สันนูน|รอยเส้น|เศษกรีด|รอยกระแทก", t, re.I):
-        return "ทบทวน slitting/ใบมีด/แนวตัด, tension กรอ, handling และการรองกันกระแทก"
-    if re.search(r"carl?ender|จุดดำ|ด่าง|สกปรก", t, re.I):
-        return "ทำความสะอาดลูกกลิ้ง/ไลน์, ตรวจของแปลกปลอม, ตั้งรอบทำความสะอาดและบันทึก"
-    if re.search(r"แกรม|หน้ากว้าง", t, re.I):
-        return "สอบเทียบเครื่องชั่ง/Trim, ยืนยันแผน sampling และ Alarm limits"
-    if re.search(r"Bursting", t, re.I):
-        return "ทบทวนสูตร/ไฟเบอร์/เคมี, ตรวจ Lab control และแนวโน้มคุณสมบัติวัตถุดิบ"
-    if re.search(r"ความชื้น|Cobb", t, re.I):
-        return "ควบคุม RH โกดัง, ตรวจซีลกันชื้น, ตรวจ oven/profile ช่วงปลายไลน์"
-    if re.search(r"แกนเบี้ยว|ม้วนหย่อน|หัวม้วนแตก", t, re.I):
-        return "ตรวจแกน, core plug, tension cut-over, วิธีแพ็ค/บล็อกมุม"
-    if re.search(r"สีตก", t, re.I):
-        return "ปรับโค้ทติ้ง/หมึก, ตรวจความหนาเคลือบและสภาวะอบแห้ง"
-    return "กำหนดแผนตรวจจุดวิกฤตในไลน์ + sampling เพิ่มเติมช่วงรับเข้า"
-
+t = str(defect)
+if re.search(r"สันนูน|รอยเส้น|เศษกรีด|รอยกระแทก", t, re.I):
+return "ทบทวน slitting/ใบมีด/แนวตัด, tension กรอ, handling และการรองกันกระแทก"
+if re.search(r"carl?ender|จุดดำ|ด่าง|สกปรก", t, re.I):
+return "ทำความสะอาดลูกกลิ้ง/ไลน์, ตรวจของแปลกปลอม, ตั้งรอบทำความสะอาดและบันทึก"
+if re.search(r"แกรม|หน้ากว้าง", t, re.I):
+return "สอบเทียบเครื่องชั่ง/Trim, ยืนยันแผน sampling และ Alarm limits"
+if re.search(r"Bursting", t, re.I):
+return "ทบทวนสูตร/ไฟเบอร์/เคมี, ตรวจ Lab control และแนวโน้มคุณสมบัติวัตถุดิบ"
+if re.search(r"ความชื้น|Cobb", t, re.I):
+return "ควบคุม RH โกดัง, ตรวจซีลกันชื้น, ตรวจ oven/profile ช่วงปลายไลน์"
+if re.search(r"แกนเบี้ยว|ม้วนหย่อน|หัวม้วนแตก", t, re.I):
+return "ตรวจแกน, core plug, tension cut-over, วิธีแพ็ค/บล็อกมุม"
+if re.search(r"สีตก", t, re.I):
+return "ปรับโค้ทติ้ง/หมึก, ตรวจความหนาเคลือบและสภาวะอบแห้ง"
+return "กำหนดแผนตรวจจุดวิกฤตในไลน์ + sampling เพิ่มเติมช่วงรับเข้า"
 # -----------------------------
 # Upload + File Type Selection
 # -----------------------------
 file_type = st.selectbox("📂 เลือกประเภทข้อมูล", ["เคลมม้วน", "เคลมแผ่น"])
 uploaded_file = st.file_uploader("📄 อัปโหลดไฟล์ Excel", type=["xlsx"])
-
 if uploaded_file:
-    df = pd.read_excel(uploaded_file)
-
-    if file_type == "เคลมม้วน":
-        rename_map = {
-            "SUP": "SUP", "ซัพพลายเออร์": "SUP", "Supplier": "SUP",
-            "สิ่งที่ไม่เป็นไปตามข้อกำหนด": "Defect", "ข้อบกพร่อง": "Defect", "อาการ": "Defect",
-            "เกรดแกรม": "Grade", "Grade": "Grade",
-            "วันที่ออก": "Date", "Date": "Date", "วันที่เอกสาร": "Date",
-            "Lot": "Lot", "Code": "Code", "วันที่ส่งของ": "ShipDate"
-        }
-        df = df.rename(columns={c: rename_map.get(c, c) for c in df.columns})
-
-        if "Date" in df.columns:
-            df["Date"] = pd.to_datetime(df["Date"], errors="coerce", dayfirst=True)
-            df["MonthKey"] = df["Date"].dt.strftime("%Y-%m")
-            df["Month"] = df["Date"].dt.month
-            df["Quarter"] = df["Date"].dt.quarter
-        else:
-            df["MonthKey"] = "ไม่ระบุ"
-            df["Month"] = None
-            df["Quarter"] = None
-
-        df["RootCause"] = df["Defect"].apply(map_root_cause)
-        df["Advice"] = df["Defect"].apply(advise_for)
-
-        # -----------------------------
-        # KPI Summary
-        # -----------------------------
-        st.subheader("📌 สรุปภาพรวม")
-        col1, col2, col3 = st.columns(3)
-        col1.metric("จำนวนรายการข้อบกพร่อง", len(df))
-        col2.metric("ซัพพลายเออร์ที่เกี่ยวข้อง", df["SUP"].nunique())
-        col3.metric("ประเภทข้อบกพร่องที่พบ", df["Defect"].nunique())
-
-        # -----------------------------
-        # Monthly Trend by SUP
-        # -----------------------------
-        st.subheader("📅 แนวโน้มรายเดือน (จำนวนเคส) แยกตาม SUP")
-        monthly_sup = df.groupby(["MonthKey", "SUP"]).size().reset_index(name="Count")
-        fig_monthly = px.line(monthly_sup, x="MonthKey", y="Count", color="SUP", markers=True)
-        st.plotly_chart(fig_monthly, use_container_width=True)
-
-        # -----------------------------
-        # Advisor Table
-        # -----------------------------
-        st.subheader("💡 คำแนะนำอัตโนมัติ (Advisor)")
-        advisor_unique = df[["SUP", "Defect", "Advice"]].drop_duplicates().sort_values(["SUP", "Defect"])
-        st.dataframe(advisor_unique, hide_index=True)
-
-        # -----------------------------
-        # Detail Table
-        # -----------------------------
-        st.subheader("📋 รายละเอียดข้อผิดพลาดตาม SUP")
-        detail = df.groupby(["SUP", "Defect", "Advice", "Grade"]).size().reset_index(name="จำนวนเคส")
-        st.dataframe(detail.sort_values(["SUP", "Defect"]), hide_index=True)
-
-        # -----------------------------
-        # Forecast: Next Month Watchouts
-        # -----------------------------
-        st.subheader("🔮 ข้อควรระวังล่วงหน้าในเดือนถัดไป")
-        if "Month" in df.columns and "SUP" in df.columns and "Defect" in df.columns:
-    # วิเคราะห์แนวโน้มย้อนหลัง 3 เดือน
-    recent_months = sorted(df["Month"].dropna().unique())[-3:]
-    recent_df = df[df["Month"].isin(recent_months)]
-
-    # วิเคราะห์ SUP ที่มี defect เพิ่มขึ้นต่อเนื่อง
-    sup_trend = recent_df.groupby(["Month", "SUP"]).size().reset_index(name="Count")
-    sup_pivot = sup_trend.pivot(index="SUP", columns="Month", values="Count").fillna(0)
-
-    rising_sups = []
-    for sup, row in sup_pivot.iterrows():
-        vals = row.values
-        if len(vals) >= 3 and vals[2] > vals[1] > vals[0]:
-            rising_sups.append(sup)
-
-    # วิเคราะห์ defect ที่ยังพบต่อเนื่อง
-    defect_trend = recent_df.groupby(["Month", "Defect"]).size().reset_index(name="Count")
-    defect_pivot = defect_trend.pivot(index="Defect", columns="Month", values="Count").fillna(0)
-
-    persistent_defects = []
-    for defect, row in defect_pivot.iterrows():
-        vals = row.values
-        if len(vals) >= 2 and vals[-1] > 0 and vals[-2] > 0:
-            persistent_defects.append(defect)
-
-    # แสดงผล
-    if rising_sups:
-        st.markdown("**SUP ที่ควรเฝ้าระวังเป็นพิเศษ:**")
-        for sup in rising_sups:
-            recent_defects = recent_df[recent_df["SUP"] == sup]["Defect"].value_counts().head(2).index.tolist()
-            st.write(f"- 🏭 `{sup}` → อาการเด่น: {', '.join(recent_defects)}")
-
-    if persistent_defects:
-        st.markdown("**อาการที่ยังพบต่อเนื่องและควรติดตาม:**")
-        for defect in persistent_defects:
-            cause = map_root_cause(defect)
-            advice = advise_for(defect)
-            st.write(f"- ⚠️ `{defect}` → สาเหตุ: **{cause}** → แนวทางป้องกัน: _{advice}_")
-
-    if not rising_sups and not persistent_defects:
-        st.info("✅ ไม่พบแนวโน้ม SUP หรืออาการที่ควรเฝ้าระวังเป็นพิเศษในเดือนถัดไป")
+df = pd.read_excel(uploaded_file)
+if file_type = = "เคลมม้วน":
+rename_map = {
+"SUP": "SUP", "ซัพพลายเออร์": "SUP", "Supplier": "SUP",
+"สิ่งที่ไม่เป็นไปตามข้อกำหนด": "Defect", "ข้อบกพร่อง": "Defect", "อาการ": "Defect",
+"เกรดแกรม": "Grade", "Grade": "Grade",
+"วันที่ออก": "Date", "Date": "Date", "วันที่เอกสาร": "Date",
+"Lot": "Lot", "Code": "Code", "วันที่ส่งของ": "ShipDate"
+}
+df = df.rename(columns={c: rename_map.get(c, c) for c in df.columns})
+if "Date" in df.columns:
+df["Date"] = pd.to_datetime(df["Date"], errors="coerce", dayfirst=True)
+df["MonthKey"] = df["Date"].dt.strftime("%Y-%m")
+df["Month"] = df["Date"].dt.month
+df["Quarter"] = df["Date"].dt.quarter
 else:
-    st.warning("⚠️ ไม่พบคอลัมน์ Month / SUP / Defect")
+df["MonthKey"] = "ไม่ระบุ"
+df["Month"] = None
+df["Quarter"] = None
+df["RootCause"] = df["Defect"].apply(map_root_cause)
+df["Advice"] = df["Defect"].apply(advise_for)
+# -----------------------------
+# KPI Summary
+# -----------------------------
+st.subheader("📌 สรุปภาพรวม")
+col1, col2, col3 = st.columns(3)
+col1.metric("จำนวนรายการข้อบกพร่อง", len(df))
+col2.metric("ซัพพลายเออร์ที่เกี่ยวข้อง", df["SUP"].nunique())
+col3.metric("ประเภทข้อบกพร่องที่พบ", df["Defect"].nunique())
+# -----------------------------
+# Monthly Trend by SUP
+# -----------------------------
+st.subheader("📅 แนวโน้มรายเดือน (จำนวนเคส) แยกตาม SUP")
+monthly_sup = df.groupby(["MonthKey", "SUP"]).size().reset_index(name="Count")
+fig_monthly = px.line(monthly_sup, x="MonthKey", y="Count", color="SUP", markers=True)
+st.plotly_chart(fig_monthly, use_container_width = True)
+# -----------------------------
+# Advisor Table
+# -----------------------------
+st.subheader("💡 คำแนะนำอัตโนมัติ (Advisor)")
+advisor_unique = df[["SUP", "Defect", "Advice"]].drop_duplicates().sort_values(["SUP", "Defect"])
+st.dataframe(advisor_unique, hide_index = True)
+# -----------------------------
+# Detail Table
+# -----------------------------
+st.subheader("📋 รายละเอียดข้อผิดพลาดตาม SUP")
+detail = df.groupby(["SUP", "Defect", "Advice", "Grade"]).size().reset_index(name="จำนวนเคส")
+st.dataframe(detail.sort_values(["SUP", "Defect"]), hide_index = True)
+# -----------------------------
+# Forecast: Next Month Watchouts
+# -----------------------------
+st.subheader("🔮 ข้อควรระวังล่วงหน้าในเดือนถัดไป")
+if "Month" in df.columns and "SUP" in df.columns and "Defect" in df.columns:
+# วิเคราะห์แนวโน้มย้อนหลัง 3 เดือน
+recent_months = sorted(df["Month"].dropna().unique())[-3:]
+recent_df = df[df["Month"].isin(recent_months)]
+# วิเคราะห์ SUP ที่มี defect เพิ่มขึ้นต่อเนื่อง
+sup_trend = recent_df.groupby(["Month", "SUP"]).size().reset_index(name="Count")
+sup_pivot = sup_trend.pivot(index="SUP", columns="Month", values="Count").fillna(0)
+rising_sups = []
+for sup, row in sup_pivot.iterrows():
+vals = row.values
+if len(vals) > = 3 and vals[2] > vals[1] > vals[0]:
+rising_sups.append(sup)
+# วิเคราะห์ defect ที่ยังพบต่อเนื่อง
+defect_trend = recent_df.groupby(["Month", "Defect"]).size().reset_index(name="Count")
+defect_pivot = defect_trend.pivot(index="Defect", columns="Month", values="Count").fillna(0)
+persistent_defects = []
+for defect, row in defect_pivot.iterrows():
+vals = row.values
+if len(vals) > = 2 and vals[-1] > 0 and vals[-2] > 0:
+persistent_defects.append(defect)
+# แสดงผล
+if rising_sups:
+st.markdown("**SUP ที่ควรเฝ้าระวังเป็นพิเศษ:**")
+for sup in rising_sups:
+recent_defects = recent_df[recent_df["SUP"] == sup]["Defect"].value_counts().head(2).index.tolist()
+st.write(f"- 🏭 `{sup}` → อาการเด่น: {', '.join(recent_defects)}")
+if persistent_defects:
+st.markdown("**อาการที่ยังพบต่อเนื่องและควรติดตาม:**")
+for defect in persistent_defects:
+cause = map_root_cause(defect)
+advice = advise_for(defect)
+st.write(f"- ⚠️ `{defect}` → สาเหตุ: **{cause}** → แนวทางป้องกัน: _{advice}_")
+if not rising_sups and not persistent_defects:
+st.info("✅ ไม่พบแนวโน้ม SUP หรืออาการที่ควรเฝ้าระวังเป็นพิเศษในเดือนถัดไป")
+else:
+st.warning("⚠️ ไม่พบคอลัมน์ Month / SUP / Defect")
