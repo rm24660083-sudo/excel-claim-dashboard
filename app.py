@@ -172,9 +172,11 @@ if uploaded_file:
     else:
         st.warning("⚠️ ไม่พบคอลัมน์ MonthKey")
 
-                # -----------------------------
-    # Top Defect by Supplier (แท่งพอดี ๆ)
+        # -----------------------------
+    # Top Defect by Supplier (go.Bar เวอร์ชันแท่งหนา)
     # -----------------------------
+    import plotly.graph_objects as go
+
     st.subheader("🔥 ประเภทอาการเด่นของแต่ละ SUP (Top 8)")
     if "SUP" in df.columns and "Defect" in df.columns:
         sup_summary = df.groupby(["SUP","Defect"]).size().reset_index(name="Count")
@@ -188,19 +190,24 @@ if uploaded_file:
         )
         df_top = sup_summary[sup_summary["SUP"].isin(top_sups)]
 
-        fig4 = px.bar(
-            df_top,
-            x="SUP",
-            y="Count",
-            color="Defect",
-            barmode="group",
-            title="Top 8 SUP และอาการเด่น"
-        )
+        fig4 = go.Figure()
 
-        # ปรับความกว้างแท่งให้อ่านง่ายขึ้น
+        # วาดแท่ง defect แยกสี และกำหนดความกว้างแท่ง
+        for defect in df_top["Defect"].unique():
+            sub = df_top[df_top["Defect"] == defect]
+            fig4.add_trace(go.Bar(
+                x=sub["SUP"],
+                y=sub["Count"],
+                name=defect,
+                width=0.8   # 👈 ปรับตรงนี้ (0–1) ค่าใหญ่ = แท่งหนา (0.8 ~ หนาขึ้น 2 เท่า)
+            ))
+
         fig4.update_layout(
-            bargap=0.15,       # ช่องว่างระหว่างกลุ่ม SUP (0 = ชิด, 1 = ห่างมาก)
-            bargroupgap=0.05   # ช่องว่างระหว่างแท่งในกลุ่มเดียวกัน
+            barmode="group",
+            bargap=0.05,       # ช่องว่างระหว่างกลุ่ม SUP
+            bargroupgap=0.02,  # ช่องว่างระหว่างแท่งในกลุ่มเดียวกัน
+            height=700,
+            title="Top 8 SUP และอาการเด่น"
         )
 
         st.plotly_chart(fig4, use_container_width=True)
@@ -351,6 +358,7 @@ if uploaded_file:
     def escape_html(s):
         """Escape อักขระพิเศษ ป้องกัน HTML injection"""
         return html.escape(str(s))
+
 
 
 
