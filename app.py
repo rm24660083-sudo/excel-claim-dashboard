@@ -9,26 +9,22 @@ import html
 # Config
 # -----------------------------
 st.set_page_config(page_title="📊 วิเคราะห์ปัญหาเคลมแผ่น", layout="wide")
-st.title("📊 รายงานวิเคราะห์ข้อบกพร่องจากเคลมม้วน")
-
 # -----------------------------
-# Logo + Credit (ซ้ายบน, โลโก้ด้านบน, เครดิตด้านล่าง)
+# Logo + Credit (เหนือ Title)
 # -----------------------------
-import streamlit as st
-
-with st.container():
-    st.markdown(
-        """
-        <div style="text-align:left;">
-            <img src="Logo.png" width="120">
-            <div style="font-size:16px; font-weight:bold; margin-top:5px;">
-                Powered by <span style="color:#d62728;">The Beyonder RM</span>
-            </div>
+st.markdown(
+    """
+    <div style="text-align:left;">
+        <img src="Logo.png" width="120">
+        <div style="font-size:16px; font-weight:bold; margin-top:5px;">
+            Powered by <span style="color:#d62728;">The Beyonder RM</span>
         </div>
-        """,
-        unsafe_allow_html=True
-    )
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
+st.title("📊 รายงานวิเคราะห์ข้อบกพร่องจากเคลมม้วน")
 # -----------------------------
 # Utility Functions (ส่วนที่ 7)
 # -----------------------------
@@ -376,5 +372,6 @@ if uploaded_file:
     def escape_html(s):
         """Escape อักขระพิเศษ ป้องกัน HTML injection"""
         return html.escape(str(s))
+
 
 
