@@ -176,3 +176,33 @@ if uploaded_file:
         )
         st.dataframe(detail, hide_index=True)
 
+# -----------------------------
+# 🔮 AI วิเคราะห์ล่วงหน้า: ข้อควรระวังเดือนถัดไป
+# -----------------------------
+st.subheader("🔮 ข้อควรระวังล่วงหน้าในเดือนถัดไป")
+
+if "Month" in df.columns and "Defect" in df.columns:
+    recent_months = sorted(df["Month"].dropna().unique())[-3:]
+    trend_df = df[df["Month"].isin(recent_months)]
+
+    # นับ defect รายเดือน
+    trend = trend_df.groupby(["Month", "Defect"]).size().reset_index(name="Count")
+    pivot = trend.pivot(index="Defect", columns="Month", values="Count").fillna(0)
+
+    # วิเคราะห์ defect ที่มีแนวโน้มเพิ่มขึ้น
+    rising_defects = []
+    for defect, row in pivot.iterrows():
+        values = row.values
+        if len(values) >= 3 and values[2] > values[1] > values[0]:
+            rising_defects.append(defect)
+
+    if rising_defects:
+        st.markdown("**อาการที่มีแนวโน้มเพิ่มขึ้นต่อเนื่อง:**")
+        for defect in rising_defects:
+            cause = map_root_cause(defect)
+            advice = advise_for(defect)
+            st.write(f"- 🔺 `{defect}` → สาเหตุ: **{cause}** → แนวทางป้องกัน: _{advice}_")
+    else:
+        st.info("✅ ไม่พบอาการที่มีแนวโน้มเพิ่มขึ้นต่อเนื่องในช่วง 3 เดือนล่าสุด")
+else:
+    st.warning("⚠️ ไม่พบคอลัมน์ Month หรือ Defect")
