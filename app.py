@@ -312,28 +312,23 @@ if uploaded_file:
     else:
         st.warning("⚠️ ไม่พบคอลัมน์ SUP หรือ Defect")
 
-        # -----------------------------
-    # Detail Table
+    # -----------------------------
+    # Detail Table (ปรับให้รวมซ้ำ)
     # -----------------------------
     st.subheader("📋 รายละเอียดข้อผิดพลาดตาม SUP")
 
-    if "SUP" in df.columns and "Defect" in df.columns:
-        # เลือกคอลัมน์ที่สำคัญ
-        detail_cols = []
-        for col in ["SUP", "Defect", "Grade", "Lot", "Code", "ShipDate"]:
-            if col in df.columns:
-                detail_cols.append(col)
-        if "RootCause" in df.columns:
-            detail_cols.append("RootCause")
-        if "Advice" in df.columns:
-            detail_cols.append("Advice")
+    if all(col in df.columns for col in ["SUP","Defect","Advice","Grade"]):
+        # รวมข้อมูลตาม SUP + Defect + Advice + Grade
+        detail = (
+            df.groupby(["SUP","Defect","Advice","Grade"])
+              .size()
+              .reset_index(name="จำนวนเคส")
+              .sort_values(["SUP","Defect"])
+        )
 
-        detail = df[detail_cols].copy()
-        # เรียงตาม SUP และ Defect
-        detail = detail.sort_values(["SUP", "Defect"])
         st.dataframe(detail, hide_index=True)
     else:
-        st.warning("⚠️ ไม่พบคอลัมน์ SUP หรือ Defect")
+        st.warning("⚠️ ไม่พบคอลัมน์ SUP / Defect / Advice / Grade")
 
         # -----------------------------
     # Utility Functions (Python version)
@@ -350,6 +345,7 @@ if uploaded_file:
     def escape_html(s):
         """Escape อักขระพิเศษ ป้องกัน HTML injection"""
         return html.escape(str(s))
+
 
 
 
