@@ -159,20 +159,20 @@ if uploaded_file:
                 .sort_values("MonthKey")
             )
             
-            fig3 = px.line(
-                monthly_sup,
-                x="MonthKey",
-                y="Count",
-                color="SUP",
-                markers=True,
-                title="จำนวน defect รายเดือนแยกตาม SUP"
+        fig3 = px.line(
+            monthly_sup,
+            x="MonthKey",
+            y="Count",
+            color="SUP",
+            markers=True,
+            title="จำนวน defect รายเดือนแยกตาม SUP"
             )
             
-            fig3.update_layout(
-                xaxis_title="เดือน",
-                yaxis_title="จำนวนเคส",
-                legend_title="SUP",
-                height=500
+        fig3.update_layout(
+            xaxis_title="เดือน",
+            yaxis_title="จำนวนเคส",
+            legend_title="SUP",
+            height=500
             )
             
         st.plotly_chart(fig3, use_container_width=True)
@@ -240,6 +240,7 @@ if uploaded_file:
                 st.info("✅ ไม่พบแนวโน้ม SUP หรืออาการที่ควรเฝ้าระวังเป็นพิเศษในเดือนถัดไป")
         else:
             st.warning("⚠️ ไม่พบคอลัมน์ Month / SUP / Defect")
+
 
 
 
