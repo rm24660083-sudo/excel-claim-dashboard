@@ -11,13 +11,15 @@ with col1:
     st.title("📊 ระบบวิเคราะห์ข้อบกพร่อง")
 
 with col2:
-    st.image("Logo.png", width=80)  # กำหนดความกว้างเป็น 80px
     st.markdown(
         """
-        <div style="text-align: center; font-size: 12px; color: gray;">
-        Powered By <br>
-        <b>ยุทธพิชัย ไก่ฟ้า</b><br>
-        หัวหน้าแผนก Sup-Rawmaterial
+        <div style="text-align: center;">
+            <img src="Logo.png" style="width:80px; display:block; margin-left:auto; margin-right:auto;">
+            <div style="font-size:12px; color:gray; margin-top:5px;">
+                Powered By <br>
+                <b>ยุทธพิชัย ไก่ฟ้า</b><br>
+                หัวหน้าแผนก Sup-Rawmaterial
+            </div>
         </div>
         """,
         unsafe_allow_html=True
@@ -32,5 +34,6 @@ st.markdown("""
 - 📑 **เคลมม้วน**  
 - 📑 **เคลมแผ่น**
 """)
+
 
 
