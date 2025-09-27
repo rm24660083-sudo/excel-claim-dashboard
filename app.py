@@ -176,51 +176,52 @@ if uploaded_file:
         )
         st.dataframe(detail, hide_index=True)
 
-# -----------------------------
-# 🔮 ข้อควรระวังล่วงหน้าในเดือนถัดไป
-# -----------------------------
-st.subheader("🔮 ข้อควรระวังล่วงหน้าในเดือนถัดไป")
+        # -----------------------------
+        # 🔮 ข้อควรระวังล่วงหน้าในเดือนถัดไป
+        # -----------------------------
+        st.subheader("🔮 ข้อควรระวังล่วงหน้าในเดือนถัดไป")
+        
+        if "Month" in df.columns and "SUP" in df.columns and "Defect" in df.columns:
+            # วิเคราะห์แนวโน้มย้อนหลัง 3 เดือน
+            recent_months = sorted(df["Month"].dropna().unique())[-3:]
+            recent_df = df[df["Month"].isin(recent_months)]
+        
+            # วิเคราะห์ SUP ที่มี defect เพิ่มขึ้นต่อเนื่อง
+            sup_trend = recent_df.groupby(["Month", "SUP"]).size().reset_index(name="Count")
+            sup_pivot = sup_trend.pivot(index="SUP", columns="Month", values="Count").fillna(0)
+        
+            rising_sups = []
+            for sup, row in sup_pivot.iterrows():
+                vals = row.values
+                if len(vals) >= 3 and vals[2] > vals[1] > vals[0]:
+                    rising_sups.append(sup)
+        
+            # วิเคราะห์ defect ที่ยังพบต่อเนื่อง
+            defect_trend = recent_df.groupby(["Month", "Defect"]).size().reset_index(name="Count")
+            defect_pivot = defect_trend.pivot(index="Defect", columns="Month", values="Count").fillna(0)
+        
+            persistent_defects = []
+            for defect, row in defect_pivot.iterrows():
+                vals = row.values
+                if len(vals) >= 2 and vals[-1] > 0 and vals[-2] > 0:
+                    persistent_defects.append(defect)
+        
+            # แสดงผล
+            if rising_sups:
+                st.markdown("**SUP ที่ควรเฝ้าระวังเป็นพิเศษ:**")
+                for sup in rising_sups:
+                    recent_defects = recent_df[recent_df["SUP"] == sup]["Defect"].value_counts().head(2).index.tolist()
+                    st.write(f"- 🏭 `{sup}` → อาการเด่น: {', '.join(recent_defects)}")
+        
+            if persistent_defects:
+                st.markdown("**อาการที่ยังพบต่อเนื่องและควรติดตาม:**")
+                for defect in persistent_defects:
+                    cause = map_root_cause(defect)
+                    advice = advise_for(defect)
+                    st.write(f"- ⚠️ `{defect}` → สาเหตุ: **{cause}** → แนวทางป้องกัน: _{advice}_")
+        
+            if not rising_sups and not persistent_defects:
+                st.info("✅ ไม่พบแนวโน้ม SUP หรืออาการที่ควรเฝ้าระวังเป็นพิเศษในเดือนถัดไป")
+        else:
+            st.warning("⚠️ ไม่พบคอลัมน์ Month / SUP / Defect")
 
-if "Month" in df.columns and "SUP" in df.columns and "Defect" in df.columns:
-    # วิเคราะห์แนวโน้มย้อนหลัง 3 เดือน
-    recent_months = sorted(df["Month"].dropna().unique())[-3:]
-    recent_df = df[df["Month"].isin(recent_months)]
-
-    # วิเคราะห์ SUP ที่มี defect เพิ่มขึ้นต่อเนื่อง
-    sup_trend = recent_df.groupby(["Month", "SUP"]).size().reset_index(name="Count")
-    sup_pivot = sup_trend.pivot(index="SUP", columns="Month", values="Count").fillna(0)
-
-    rising_sups = []
-    for sup, row in sup_pivot.iterrows():
-        vals = row.values
-        if len(vals) >= 3 and vals[2] > vals[1] > vals[0]:
-            rising_sups.append(sup)
-
-    # วิเคราะห์ defect ที่ยังพบต่อเนื่อง
-    defect_trend = recent_df.groupby(["Month", "Defect"]).size().reset_index(name="Count")
-    defect_pivot = defect_trend.pivot(index="Defect", columns="Month", values="Count").fillna(0)
-
-    persistent_defects = []
-    for defect, row in defect_pivot.iterrows():
-        vals = row.values
-        if len(vals) >= 2 and vals[-1] > 0 and vals[-2] > 0:
-            persistent_defects.append(defect)
-
-    # แสดงผล
-    if rising_sups:
-        st.markdown("**SUP ที่ควรเฝ้าระวังเป็นพิเศษ:**")
-        for sup in rising_sups:
-            recent_defects = recent_df[recent_df["SUP"] == sup]["Defect"].value_counts().head(2).index.tolist()
-            st.write(f"- 🏭 `{sup}` → อาการเด่น: {', '.join(recent_defects)}")
-
-    if persistent_defects:
-        st.markdown("**อาการที่ยังพบต่อเนื่องและควรติดตาม:**")
-        for defect in persistent_defects:
-            cause = map_root_cause(defect)
-            advice = advise_for(defect)
-            st.write(f"- ⚠️ `{defect}` → สาเหตุ: **{cause}** → แนวทางป้องกัน: _{advice}_")
-
-    if not rising_sups and not persistent_defects:
-        st.info("✅ ไม่พบแนวโน้ม SUP หรืออาการที่ควรเฝ้าระวังเป็นพิเศษในเดือนถัดไป")
-else:
-    st.warning("⚠️ ไม่พบคอลัมน์ Month / SUP / Defect")
