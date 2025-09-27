@@ -173,7 +173,7 @@ if uploaded_file:
         st.warning("⚠️ ไม่พบคอลัมน์ MonthKey")
 
     # -----------------------------
-    # Top Defect by Supplier
+    # Top Defect by Supplier (แท่งใหญ่ขึ้น)
     # -----------------------------
     st.subheader("🔥 ประเภทอาการเด่นของแต่ละ SUP (Top 8)")
     if "SUP" in df.columns and "Defect" in df.columns:
@@ -196,10 +196,17 @@ if uploaded_file:
             barmode="group",
             title="Top 8 SUP และอาการเด่น"
         )
+
+        # ปรับ layout ให้แท่งใหญ่ขึ้น
+        fig4.update_layout(
+            bargap=0.2,          # ลดช่องว่างระหว่างแท่ง
+            bargroupgap=0.05,    # ลดช่องว่างระหว่างกลุ่ม
+            height=700           # เพิ่มความสูงของกราฟ
+        )
+
         st.plotly_chart(fig4, use_container_width=True)
     else:
         st.warning("⚠️ ไม่พบคอลัมน์ SUP หรือ Defect")
-
 
         # -----------------------------
     # Summary Table
@@ -345,6 +352,7 @@ if uploaded_file:
     def escape_html(s):
         """Escape อักขระพิเศษ ป้องกัน HTML injection"""
         return html.escape(str(s))
+
 
 
 
