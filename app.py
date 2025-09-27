@@ -11,15 +11,13 @@ with col1:
     st.title("📊 ระบบวิเคราะห์ข้อบกพร่อง")
 
 with col2:
+    st.image("Logo.png", width=80)  # ตรวจสอบว่า Logo.png อยู่โฟลเดอร์เดียวกับ app.py
     st.markdown(
         """
-        <div style="display:flex; flex-direction:column; align-items:center;">
-            <img src="Logo.png" style="width:80px; margin-bottom:8px;">
-            <div style="font-size:12px; color:gray; text-align:center;">
-                Powered By <br>
-                <b>ยุทธพิชัย ไก่ฟ้า</b><br>
-                หัวหน้าแผนก Sup-Rawmaterial
-            </div>
+        <div style="text-align: center; font-size:12px; color:gray; margin-top:5px;">
+            Powered By <br>
+            <b>ยุทธพิชัย ไก่ฟ้า</b><br>
+            หัวหน้าแผนก Sup-Rawmaterial
         </div>
         """,
         unsafe_allow_html=True
@@ -34,6 +32,7 @@ st.markdown("""
 - 📑 **เคลมม้วน**  
 - 📑 **เคลมแผ่น**
 """)
+
 
 
 
