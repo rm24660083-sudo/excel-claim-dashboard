@@ -190,41 +190,41 @@ if uploaded_file:
         else:
             st.warning("⚠️ ไม่พบคอลัมน์ Month / SUP / Defect")
 
-    elif file_type == "เคลมแผ่น":
-                # ✅ เตรียมคอลัมน์เวลาให้พร้อมใช้งาน
-        # - สร้าง MonthKey/Month/Quarter จาก Date หากยังไม่มี
-        # - รองรับกรณีมีคอลัมน์ภาษาไทย MONTH/QUARTER จากไฟล์
-        if "MonthKey" not in df.columns:
-            if "Date" in df.columns and pd.api.types.is_datetime64_any_dtype(df["Date"]):
-                df["MonthKey"] = df["Date"].dt.strftime("%Y-%m")
-            elif "MONTH" in df.columns:
-                # แปลง MONTH เป็น MonthKey แบบ YYYY-MM ถ้ามี Year
-                if "YEAR" in df.columns:
-                    df["MonthKey"] = df["YEAR"].astype(str) + "-" + df["MONTH"].astype(str).str.zfill(2)
-                else:
-                    df["MonthKey"] = df["MONTH"].astype(str).str.zfill(2)
-            else:
-                df["MonthKey"] = "ไม่ระบุ"
+        elif file_type == "เคลมแผ่น":
+        # 🔹 Map คอลัมน์จากไฟล์ Excel ให้ตรงกับที่โค้ดใช้
+        rename_map_sheet = {
+            "SUPPLIER": "SUP",
+            "สิ่งที่ไม่เป็นไปตามข้อกำหนด": "Defect",
+            "เกรดแกรม": "Grade",
+            "วันที่รับของ": "Date",
+            "Lot Number": "Lot",
+            "หน้ากว้าง": "Size",
+            "จำนวน แผ่น": "Qty",
+            "น้ำหนัก KG.": "Weight",
+            "MONTH": "Month",
+            "QUARTER": "Quarter",
+            "YEAR": "Year"
+        }
+        df = df.rename(columns={c: rename_map_sheet.get(c, c) for c in df.columns})
+    
+        # 🔹 จัดการวันที่และสร้าง MonthKey
+        if "Date" in df.columns:
+            df["Date"] = pd.to_datetime(df["Date"], errors="coerce", dayfirst=True)
+            df["MonthKey"] = df["Date"].dt.strftime("%Y-%m")
+            df["Month"] = df["Date"].dt.month
+            df["Quarter"] = df["Date"].dt.quarter
+        elif "Month" in df.columns and "Year" in df.columns:
+            df["MonthKey"] = df["Year"].astype(str) + "-" + df["Month"].astype(str).str.zfill(2)
+        else:
+            df["MonthKey"] = "ไม่ระบุ"
+    
+        # 🔹 RootCause + Advice
+        if "Defect" in df.columns:
+            df["RootCause"] = df["Defect"].apply(map_root_cause)
+            df["Advice"] = df["Defect"].apply(advise_for)
+        else:
+            st.error("⚠️ ไม่พบคอลัมน์ Defect (สิ่งที่ไม่เป็นไปตามข้อกำหนด) ในไฟล์ Excel")
 
-        if "Month" not in df.columns:
-            if "Date" in df.columns and pd.api.types.is_datetime64_any_dtype(df["Date"]):
-                df["Month"] = df["Date"].dt.month
-            elif "MONTH" in df.columns:
-                df["Month"] = pd.to_numeric(df["MONTH"], errors="coerce")
-            else:
-                df["Month"] = np.nan
-
-        if "Quarter" not in df.columns:
-            if "Date" in df.columns and pd.api.types.is_datetime64_any_dtype(df["Date"]):
-                df["Quarter"] = df["Date"].dt.quarter
-            elif "QUARTER" in df.columns:
-                df["Quarter"] = pd.to_numeric(df["QUARTER"], errors="coerce")
-            else:
-                # คำนวณจาก Month ถ้าได้
-                df["Quarter"] = np.where(df["Month"].between(1, 3), 1,
-                                 np.where(df["Month"].between(4, 6), 2,
-                                 np.where(df["Month"].between(7, 9), 3,
-                                 np.where(df["Month"].between(10, 12), 4, np.nan))))
 
         # -----------------------------
         # 🔹 1) SUPPLIER ไหนมีข้อบกพร่องอะไร กี่ครั้งต่อเดือน/Quarter
@@ -366,3 +366,4 @@ if uploaded_file:
             .sort_values(["SUP", "Defect"])
         )
         st.dataframe(advisor_unique, hide_index=True)
+
