@@ -12,6 +12,8 @@ st.set_page_config(page_title="📊 วิเคราะห์ปัญหา�
 # -----------------------------
 # Logo + Credit (เหนือ Title)
 # -----------------------------
+import streamlit as st
+
 st.markdown(
     """
     <div style="text-align:left;">
@@ -372,6 +374,7 @@ if uploaded_file:
     def escape_html(s):
         """Escape อักขระพิเศษ ป้องกัน HTML injection"""
         return html.escape(str(s))
+
 
 
 
