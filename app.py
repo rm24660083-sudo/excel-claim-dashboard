@@ -239,8 +239,3 @@ if "Month" in df.columns and "SUP" in df.columns and "Defect" in df.columns:
         st.info("✅ ไม่พบแนวโน้ม SUP หรืออาการที่ควรเฝ้าระวังเป็นพิเศษในเดือนถัดไป")
 else:
     st.warning("⚠️ ไม่พบคอลัมน์ Month / SUP / Defect")
-
-
-
-
-
