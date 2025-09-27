@@ -150,46 +150,31 @@ if uploaded_file:
         fig2 = px.pie(defect_count, names="Defect", values="Count", title="Defect Breakdown")
         st.plotly_chart(fig2, use_container_width=True)
 
-        # 🔹 แนวโน้มรายเดือนแยกตาม SUP
-st.subheader("📅 แนวโน้มรายเดือน (จำนวนเคส) แยกตาม SUP")
+        # 🔹 แนวโน้มรายเดือน
+        st.subheader("📅 แนวโน้มรายเดือน (จำนวนเคส)")
+        monthly = (
+            df.groupby("MonthKey")
+              .size()
+              .reset_index(name="Count")
+              .sort_values("MonthKey")
+        )
+        fig3 = px.line(monthly, x="MonthKey", y="Count", markers=True, title="จำนวน defect รายเดือน")
+        st.plotly_chart(fig3, use_container_width=True)
 
-if "MonthKey" in df.columns and "SUP" in df.columns:
-    monthly_sup = (
-        df.groupby(["MonthKey", "SUP"])
-          .size()
-          .reset_index(name="Count")
-          .sort_values("MonthKey")
-    )
+        # 🔹 ตารางคำแนะนำ
+        st.subheader("💡 คำแนะนำอัตโนมัติ (Advisor)")
+        advisor_unique = df[["SUP", "Defect", "Advice"]].drop_duplicates().sort_values(["SUP", "Defect"])
+        st.dataframe(advisor_unique, hide_index=True)
 
-    fig3 = px.line(
-        monthly_sup,
-        x="MonthKey",
-        y="Count",
-        color="SUP",
-        markers=True,
-        title="จำนวน defect รายเดือนแยกตาม SUP"
-    )
-
-    fig3.update_layout(
-        xaxis_title="เดือน",
-        yaxis_title="จำนวนเคส",
-        legend_title="SUP",
-        height=500
-    )
-
-    st.plotly_chart(fig3, use_container_width=True)
-else:
-    st.warning("⚠️ ไม่พบคอลัมน์ MonthKey หรือ SUP")
-
-# 🔹 รายละเอียดข้อผิดพลาด
-st.subheader("📋 รายละเอียดข้อผิดพลาดตาม SUP")
-    detail = (
-    df.groupby(["SUP", "Defect", "Advice", "Grade"])
-    .size()
-    .reset_index(name="จำนวนเคส")
-    .sort_values(["SUP", "Defect"])
-    )
-st.dataframe(detail, hide_index=True)
+        # 🔹 รายละเอียดข้อผิดพลาด
+        st.subheader("📋 รายละเอียดข้อผิดพลาดตาม SUP")
+        detail = (
+            df.groupby(["SUP", "Defect", "Advice", "Grade"])
+              .size()
+              .reset_index(name="จำนวนเคส")
+              .sort_values(["SUP", "Defect"])
+        )
+        st.dataframe(detail, hide_index=True)
 
 # -----------------------------
 # 🔮 ข้อควรระวังล่วงหน้าในเดือนถัดไป
@@ -239,4 +224,3 @@ if "Month" in df.columns and "SUP" in df.columns and "Defect" in df.columns:
         st.info("✅ ไม่พบแนวโน้ม SUP หรืออาการที่ควรเฝ้าระวังเป็นพิเศษในเดือนถัดไป")
 else:
     st.warning("⚠️ ไม่พบคอลัมน์ Month / SUP / Defect")
-
