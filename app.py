@@ -89,9 +89,15 @@ def advise_for(defect):
 # -----------------------------
 # Upload file (ส่วนที่ 1)
 # -----------------------------
+# 🔹 เลือกประเภทไฟล์ก่อนอัปโหลด
+file_type = st.selectbox("📂 เลือกประเภทข้อมูล", ["เคลมม้วน", "เคลมแผ่น"])
 uploaded_file = st.file_uploader("📄 อัปโหลดไฟล์ Excel", type=["xlsx"])
 
 if uploaded_file:
+    df = pd.read_excel(uploaded_file)
+
+    if file_type == "เคลมม้วน":
+        if uploaded_file:
     df = pd.read_excel(uploaded_file)
 
     # Rename columns
@@ -380,3 +386,33 @@ if uploaded_file:
     def escape_html(s):
         """Escape อักขระพิเศษ ป้องกัน HTML injection"""
         return html.escape(str(s))
+
+from io import BytesIO
+from fpdf import FPDF
+
+def to_excel(df):
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
+        df.to_excel(writer, index=False, sheet_name="Analysis")
+        writer.save()
+    return output.getvalue()
+
+def generate_pdf(df):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+    pdf.cell(200, 10, txt="รายงานวิเคราะห์ข้อบกพร่อง", ln=True, align="C")
+    pdf.ln(10)
+    for _, row in df.iterrows():
+        line = f"SUP: {row.get('SUP','')} | Defect: {row.get('Defect','')} | Advice: {row.get('Advice','')}"
+        pdf.multi_cell(0, 10, txt=line)
+    return pdf.output(dest="S").encode("latin-1")
+
+# ปุ่มดาวน์โหลด
+st.subheader("📥 Export ข้อมูล")
+st.download_button("📤 ดาวน์โหลด Excel", to_excel(df), "analysis.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+st.download_button("📄 ดาวน์โหลด PDF", generate_pdf(df), "analysis.pdf", mime="application/pdf")
+
+elif file_type == "เคลมแผ่น":
+        # 👈 เขียน logic แยกสำหรับเคลมแผ่น (หรือใช้โค้ดเดิมถ้าโครงสร้างเหมือนกัน)
+        ...
