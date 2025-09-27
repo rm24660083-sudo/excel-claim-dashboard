@@ -8,19 +8,23 @@ import html
 # -----------------------------
 # Config
 # -----------------------------
+
 st.set_page_config(page_title="📊 วิเคราะห์ปัญหาเคลมแผ่น", layout="wide")
+
 # -----------------------------
 # Logo + Credit (เหนือ Title)
 # -----------------------------
-import streamlit as st
+# หา path ของไฟล์ Logo.png ที่อยู่โฟลเดอร์เดียวกับ app.py
+logo_path = os.path.join(os.path.dirname(__file__), "Logo.png")
 
+# แสดงโลโก้
+st.image(logo_path, width=120)
+
+# แสดงเครดิตใต้โลโก้
 st.markdown(
     """
-    <div style="text-align:left;">
-        <img src="Logo.png" width="120">
-        <div style="font-size:16px; font-weight:bold; margin-top:5px;">
-            Powered by <span style="color:#d62728;">The Beyonder RM</span>
-        </div>
+    <div style="font-size:16px; font-weight:bold; margin-top:5px;">
+        Powered by <span style="color:#d62728;">The Beyonder RM</span>
     </div>
     """,
     unsafe_allow_html=True
@@ -374,6 +378,7 @@ if uploaded_file:
     def escape_html(s):
         """Escape อักขระพิเศษ ป้องกัน HTML injection"""
         return html.escape(str(s))
+
 
 
 
