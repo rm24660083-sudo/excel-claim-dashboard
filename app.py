@@ -13,9 +13,9 @@ with col1:
 with col2:
     st.markdown(
         """
-        <div style="display: flex; flex-direction: column; align-items: center;">
-            <img src="Logo.png" style="width:80px; margin-bottom:5px;">
-            <div style="font-size:12px; color:gray; text-align:center;">
+        <div style="text-align: center;">
+            <img src="Logo.png" style="width:80px; margin-bottom:8px;">
+            <div style="font-size:12px; color:gray;">
                 Powered By <br>
                 <b>ยุทธพิชัย ไก่ฟ้า</b><br>
                 หัวหน้าแผนก Sup-Rawmaterial
@@ -34,6 +34,7 @@ st.markdown("""
 - 📑 **เคลมม้วน**  
 - 📑 **เคลมแผ่น**
 """)
+
 
 
 
