@@ -97,7 +97,7 @@ if uploaded_file:
     df = pd.read_excel(uploaded_file)
 
     if file_type == "เคลมม้วน":
-        # 🔹 เคลมม้วน: Rename + Date
+        # 🔹 เริ่มวิเคราะห์เคลมม้วน
         rename_map = {
             "SUP": "SUP", "ซัพพลายเออร์": "SUP", "Supplier": "SUP",
             "สิ่งที่ไม่เป็นไปตามข้อกำหนด": "Defect", "ข้อบกพร่อง": "Defect", "อาการ": "Defect",
@@ -114,256 +114,129 @@ if uploaded_file:
             df["Quarter"] = df["Date"].dt.quarter
         else:
             df["MonthKey"] = "ไม่ระบุ"
-            df["Month"] = None
-            df["Quarter"] = None
 
+        # 🔹 RootCause + Advice
         df["RootCause"] = df["Defect"].apply(map_root_cause)
         df["Advice"] = df["Defect"].apply(advise_for)
 
-        # 🔹 เคลมม้วน: กราฟและตาราง
+        # 🔹 KPI
         st.subheader("📌 สรุปภาพรวม")
         col1, col2, col3 = st.columns(3)
         col1.metric("จำนวนรายการข้อบกพร่อง", len(df))
         col2.metric("ซัพพลายเออร์ที่เกี่ยวข้อง", df["SUP"].nunique())
         col3.metric("ประเภทข้อบกพร่องที่พบ", df["Defect"].nunique())
 
+        # 🔹 กราฟ SUP
         st.subheader("🏭 อันดับ SUP โดยจำนวนข้อบกพร่อง (Top 12)")
-        sup_count = df.groupby("SUP").size().reset_index(name="Count").sort_values("Count", ascending=False).head(12)
+        sup_count = (
+            df.groupby("SUP")
+              .size()
+              .reset_index(name="Count")
+              .sort_values("Count", ascending=False)
+              .head(12)
+        )
         fig1 = px.bar(sup_count, x="SUP", y="Count", text="Count", title="จำนวน defect ต่อ SUP")
         st.plotly_chart(fig1, use_container_width=True)
 
+        # 🔹 กราฟ Defect
         st.subheader("🧩 สัดส่วนประเภทข้อบกพร่อง (Top 12)")
-        defect_count = df.groupby("Defect").size().reset_index(name="Count").sort_values("Count", ascending=False).head(12)
+        defect_count = (
+            df.groupby("Defect")
+              .size()
+              .reset_index(name="Count")
+              .sort_values("Count", ascending=False)
+              .head(12)
+        )
         fig2 = px.pie(defect_count, names="Defect", values="Count", title="Defect Breakdown")
         st.plotly_chart(fig2, use_container_width=True)
 
+        # 🔹 แนวโน้มรายเดือน (จำนวนเคส) แยกตาม SUP
         st.subheader("📅 แนวโน้มรายเดือน (จำนวนเคส) แยกตาม SUP")
-        monthly_sup = df.groupby(["MonthKey", "SUP"]).size().reset_index(name="Count").sort_values("MonthKey")
-        fig3 = px.line(monthly_sup, x="MonthKey", y="Count", color="SUP", markers=True, title="จำนวน defect รายเดือนแยกตาม SUP")
-        fig3.update_layout(xaxis_title="เดือน", yaxis_title="จำนวนเคส", legend_title="SUP", height=500)
+        monthly_sup = (
+            df.groupby(["MonthKey", "SUP"])
+                .size()
+                .reset_index(name="Count")
+                .sort_values("MonthKey")
+            )
+            
+        fig3 = px.line(
+            monthly_sup,
+            x="MonthKey",
+            y="Count",
+            color="SUP",
+            markers=True,
+            title="จำนวน defect รายเดือนแยกตาม SUP"
+            )
+            
+        fig3.update_layout(
+            xaxis_title="เดือน",
+            yaxis_title="จำนวนเคส",
+            legend_title="SUP",
+            height=500
+            )
+            
         st.plotly_chart(fig3, use_container_width=True)
 
+        # 🔹 ตารางคำแนะนำ
         st.subheader("💡 คำแนะนำอัตโนมัติ (Advisor)")
         advisor_unique = df[["SUP", "Defect", "Advice"]].drop_duplicates().sort_values(["SUP", "Defect"])
         st.dataframe(advisor_unique, hide_index=True)
 
+        # 🔹 รายละเอียดข้อผิดพลาด
         st.subheader("📋 รายละเอียดข้อผิดพลาดตาม SUP")
-        detail = df.groupby(["SUP", "Defect", "Advice", "Grade"]).size().reset_index(name="จำนวนเคส").sort_values(["SUP", "Defect"])
+        detail = (
+            df.groupby(["SUP", "Defect", "Advice", "Grade"])
+              .size()
+              .reset_index(name="จำนวนเคส")
+              .sort_values(["SUP", "Defect"])
+        )
         st.dataframe(detail, hide_index=True)
 
-        # 🔮 วิเคราะห์ล่วงหน้าเคลมม้วน
+        # -----------------------------
+        # 🔮 ข้อควรระวังล่วงหน้าในเดือนถัดไป
+        # -----------------------------
         st.subheader("🔮 ข้อควรระวังล่วงหน้าในเดือนถัดไป")
+        
         if "Month" in df.columns and "SUP" in df.columns and "Defect" in df.columns:
+            # วิเคราะห์แนวโน้มย้อนหลัง 3 เดือน
             recent_months = sorted(df["Month"].dropna().unique())[-3:]
             recent_df = df[df["Month"].isin(recent_months)]
-
+        
+            # วิเคราะห์ SUP ที่มี defect เพิ่มขึ้นต่อเนื่อง
             sup_trend = recent_df.groupby(["Month", "SUP"]).size().reset_index(name="Count")
             sup_pivot = sup_trend.pivot(index="SUP", columns="Month", values="Count").fillna(0)
-
+        
             rising_sups = []
-        for sup, row in sup_pivot.iterrows():
-            vals = row.values
-        if len(vals) >= 3 and vals[2] > vals[1] > vals[0]:
-            rising_sups.append(sup)
-
-
+            for sup, row in sup_pivot.iterrows():
+                vals = row.values
+                if len(vals) >= 3 and vals[2] > vals[1] > vals[0]:
+                    rising_sups.append(sup)
+        
+            # วิเคราะห์ defect ที่ยังพบต่อเนื่อง
             defect_trend = recent_df.groupby(["Month", "Defect"]).size().reset_index(name="Count")
             defect_pivot = defect_trend.pivot(index="Defect", columns="Month", values="Count").fillna(0)
-
-            persistent_defects = [defect for defect, row in defect_pivot.iterrows() if len(row) >= 2 and row[-1] > 0 and row[-2] > 0]
-
+        
+            persistent_defects = []
+            for defect, row in defect_pivot.iterrows():
+                vals = row.values
+                if len(vals) >= 2 and vals[-1] > 0 and vals[-2] > 0:
+                    persistent_defects.append(defect)
+        
+            # แสดงผล
             if rising_sups:
                 st.markdown("**SUP ที่ควรเฝ้าระวังเป็นพิเศษ:**")
                 for sup in rising_sups:
                     recent_defects = recent_df[recent_df["SUP"] == sup]["Defect"].value_counts().head(2).index.tolist()
                     st.write(f"- 🏭 `{sup}` → อาการเด่น: {', '.join(recent_defects)}")
-
+        
             if persistent_defects:
                 st.markdown("**อาการที่ยังพบต่อเนื่องและควรติดตาม:**")
                 for defect in persistent_defects:
                     cause = map_root_cause(defect)
                     advice = advise_for(defect)
                     st.write(f"- ⚠️ `{defect}` → สาเหตุ: **{cause}** → แนวทางป้องกัน: _{advice}_")
-
+        
             if not rising_sups and not persistent_defects:
                 st.info("✅ ไม่พบแนวโน้ม SUP หรืออาการที่ควรเฝ้าระวังเป็นพิเศษในเดือนถัดไป")
         else:
             st.warning("⚠️ ไม่พบคอลัมน์ Month / SUP / Defect")
-
-        elif file_type == "เคลมแผ่น":
-        # 🔹 Map คอลัมน์จากไฟล์ Excel ให้ตรงกับที่โค้ดใช้
-        rename_map_sheet = {
-            "SUPPLIER": "SUP",
-            "สิ่งที่ไม่เป็นไปตามข้อกำหนด": "Defect",
-            "เกรดแกรม": "Grade",
-            "วันที่รับของ": "Date",
-            "Lot Number": "Lot",
-            "หน้ากว้าง": "Size",
-            "จำนวน แผ่น": "Qty",
-            "น้ำหนัก KG.": "Weight",
-            "MONTH": "Month",
-            "QUARTER": "Quarter",
-            "YEAR": "Year"
-        }
-        df = df.rename(columns={c: rename_map_sheet.get(c, c) for c in df.columns})
-    
-        # 🔹 จัดการวันที่และสร้าง MonthKey
-        if "Date" in df.columns:
-            df["Date"] = pd.to_datetime(df["Date"], errors="coerce", dayfirst=True)
-            df["MonthKey"] = df["Date"].dt.strftime("%Y-%m")
-            df["Month"] = df["Date"].dt.month
-            df["Quarter"] = df["Date"].dt.quarter
-        elif "Month" in df.columns and "Year" in df.columns:
-            df["MonthKey"] = df["Year"].astype(str) + "-" + df["Month"].astype(str).str.zfill(2)
-        else:
-            df["MonthKey"] = "ไม่ระบุ"
-    
-        # 🔹 RootCause + Advice
-        if "Defect" in df.columns:
-            df["RootCause"] = df["Defect"].apply(map_root_cause)
-            df["Advice"] = df["Defect"].apply(advise_for)
-        else:
-            st.error("⚠️ ไม่พบคอลัมน์ Defect (สิ่งที่ไม่เป็นไปตามข้อกำหนด) ในไฟล์ Excel")
-
-
-        # -----------------------------
-        # 🔹 1) SUPPLIER ไหนมีข้อบกพร่องอะไร กี่ครั้งต่อเดือน/Quarter
-        # -----------------------------
-        st.subheader("📊 จำนวนข้อบกพร่องรายเดือน/Quarter แยกตาม SUPPLIER และสาเหตุ")
-
-        monthly_summary = (
-            df.groupby(["MonthKey", "SUP", "Defect"])
-              .size()
-              .reset_index(name="จำนวนเคส")
-              .sort_values(["MonthKey", "SUP", "จำนวนเคส"], ascending=[True, True, False])
-        )
-        quarterly_summary = (
-            df.groupby(["Quarter", "SUP", "Defect"])
-              .size()
-              .reset_index(name="จำนวนเคส")
-              .sort_values(["Quarter", "SUP", "จำนวนเคส"], ascending=[True, True, False])
-        )
-
-        st.markdown("**รายเดือน:**")
-        st.dataframe(monthly_summary, hide_index=True)
-
-        st.markdown("**ราย Quarter:**")
-        st.dataframe(quarterly_summary, hide_index=True)
-
-        # -----------------------------
-        # 🔹 2) แต่ละสาเหตุมีเกรดแกรมอะไรบ้างจาก SUPPLIER ไหน
-        # -----------------------------
-        st.subheader("📋 เกรดแกรมของแต่ละสาเหตุ แยกตาม SUPPLIER")
-
-        defect_grade = (
-            df.groupby(["Defect", "Grade", "SUP"])
-              .size()
-              .reset_index(name="จำนวนเคส")
-              .sort_values(["Defect", "SUP", "จำนวนเคส"], ascending=[True, True, False])
-        )
-        st.dataframe(defect_grade, hide_index=True)
-
-        # -----------------------------
-        # 🔹 3) ข้อผิดพลาดของแต่ละ SUPPLIER ต่อเดือน/Quarter
-        # -----------------------------
-        st.subheader("📌 ข้อผิดพลาดของแต่ละ SUPPLIER รายเดือนและราย Quarter")
-
-        monthly_defect = (
-            df.groupby(["SUP", "MonthKey", "Defect"])
-              .size()
-              .reset_index(name="จำนวนเคส")
-              .sort_values(["SUP", "MonthKey", "จำนวนเคส"], ascending=[True, True, False])
-        )
-        quarterly_defect = (
-            df.groupby(["SUP", "Quarter", "Defect"])
-              .size()
-              .reset_index(name="จำนวนเคส")
-              .sort_values(["SUP", "Quarter", "จำนวนเคส"], ascending=[True, True, False])
-        )
-
-        st.markdown("**รายเดือน:**")
-        st.dataframe(monthly_defect, hide_index=True)
-
-        st.markdown("**ราย Quarter:**")
-        st.dataframe(quarterly_defect, hide_index=True)
-
-        # -----------------------------
-        # 🔹 4) AI วิเคราะห์ SUPPLIER ที่ยังต้องเฝ้าระวัง + สาเหตุ + แนวทางแก้ไข
-        # -----------------------------
-        st.subheader("🔍 AI วิเคราะห์: SUPPLIER ที่ควรเฝ้าระวังและสาเหตุที่ยังต้องติดตาม")
-
-        recent_months = sorted(pd.Series(df["Month"]).dropna().unique())[-3:]
-        recent_df = df[df["Month"].isin(recent_months)]
-
-        sup_trend = recent_df.groupby(["Month", "SUP"]).size().reset_index(name="Count")
-        sup_pivot = sup_trend.pivot(index="SUP", columns="Month", values="Count").fillna(0).sort_index(axis=1)
-
-        rising_sups = []
-        for sup, row in sup_pivot.iterrows():
-            vals = row.values
-            if len(vals) >= 3 and vals[-1] > vals[-2] > vals[-3]:
-                rising_sups.append(sup)
-
-        if rising_sups:
-            st.markdown("**SUP ที่ควรเฝ้าระวังเป็นพิเศษ:**")
-            for sup in rising_sups:
-                top_defects = (
-                    recent_df[recent_df["SUP"] == sup]["Defect"]
-                    .value_counts()
-                    .head(2)
-                    .index
-                    .tolist()
-                )
-                st.write(f"- 🏭 `{sup}` → อาการเด่น: {', '.join(top_defects)}")
-        else:
-            st.info("✅ ไม่พบ SUPPLIER ที่มีแนวโน้มเพิ่มขึ้นต่อเนื่องในช่วง 3 เดือนล่าสุด")
-
-        # -----------------------------
-        # 🔹 5) AI วิเคราะห์ล่วงหน้าเดือนถัดไป: อาการที่ต้องติดตาม/แนวทางป้องกัน
-        # -----------------------------
-        st.subheader("🔮 AI วิเคราะห์ล่วงหน้า: อาการที่ควรติดตามในเดือนถัดไป")
-
-        defect_trend = recent_df.groupby(["Month", "Defect"]).size().reset_index(name="Count")
-        defect_pivot = defect_trend.pivot(index="Defect", columns="Month", values="Count").fillna(0).sort_index(axis=1)
-
-        persistent_defects = []
-        for defect, row in defect_pivot.iterrows():
-            vals = row.values
-            if len(vals) >= 2 and vals[-1] > 0 and vals[-2] > 0:
-                persistent_defects.append(defect)
-
-        if persistent_defects:
-            st.markdown("**อาการที่ยังพบต่อเนื่องและควรติดตาม:**")
-            for defect in persistent_defects:
-                cause = map_root_cause(defect)
-                advice = advise_for(defect)
-                st.write(f"- ⚠️ `{defect}` → สาเหตุ: **{cause}** → แนวทางป้องกัน: _{advice}_")
-        else:
-            st.info("✅ ไม่พบอาการที่ยังพบต่อเนื่องในช่วง 2 เดือนล่าสุด")
-
-        # -----------------------------
-        # 🔹 กราฟแนวโน้มรายเดือนแยก SUP (ช่วยดูภาพรวมเคลมแผ่น)
-        # -----------------------------
-        st.subheader("📅 แนวโน้มรายเดือนเคลมแผ่น (จำนวนเคส) แยกตาม SUP")
-        monthly_sup = (
-            df.groupby(["MonthKey", "SUP"])
-              .size()
-              .reset_index(name="Count")
-              .sort_values("MonthKey")
-        )
-        fig_sheet = px.line(monthly_sup, x="MonthKey", y="Count", color="SUP", markers=True,
-                            title="จำนวนเคลมแผ่นรายเดือนแยกตาม SUP")
-        fig_sheet.update_layout(xaxis_title="เดือน", yaxis_title="จำนวนเคส", legend_title="SUP", height=480)
-        st.plotly_chart(fig_sheet, use_container_width=True)
-
-        # -----------------------------
-        # 🔹 ตารางคำแนะนำสรุป
-        # -----------------------------
-        st.subheader("💡 คำแนะนำอัตโนมัติ (เคลมแผ่น)")
-        advisor_unique = (
-            df[["SUP", "Defect", "Advice"]]
-            .drop_duplicates()
-            .sort_values(["SUP", "Defect"])
-        )
-        st.dataframe(advisor_unique, hide_index=True)
-
