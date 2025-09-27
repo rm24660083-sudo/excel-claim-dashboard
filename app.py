@@ -160,7 +160,12 @@ if uploaded_file:
             sup_trend = recent_df.groupby(["Month", "SUP"]).size().reset_index(name="Count")
             sup_pivot = sup_trend.pivot(index="SUP", columns="Month", values="Count").fillna(0)
 
-            rising_sups = [sup for sup, row in sup_pivot.iterrows() if len(row) >= 3 and row[2] > row[1] > row[0]]
+            rising_sups = []
+        for sup, row in sup_pivot.iterrows():
+            vals = row.values
+        if len(vals) >= 3 and vals[2] > vals[1] > vals[0]:
+            rising_sups.append(sup)
+
 
             defect_trend = recent_df.groupby(["Month", "Defect"]).size().reset_index(name="Count")
             defect_pivot = defect_trend.pivot(index="Defect", columns="Month", values="Count").fillna(0)
@@ -310,3 +315,4 @@ if uploaded_file:
                 st.write(f"- ⚠️ `{defect}` → สาเหตุ: **{cause}** → แนวทางป้องกัน: _{advice}_")
         else:
             st.info("✅ ไม่พบอาการที่ยังพบต่อเนื่องในช่วง 2 เดือนล่าสุด")
+
