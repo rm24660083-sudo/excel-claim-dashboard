@@ -65,23 +65,18 @@ def process_claim_roll(df):
 
     def advise_for(defect):
         t = str(defect)
-        if "สันนูน" in t or "รอยเส้น" in t or "เศษกรีด" in t:
-            return "ตรวจสอบ slitting/ใบมีด และ tension กรอ"
-        if "Calender" in t or "จุดดำ" in t or "ด่าง" in t:
+        if "จุดดำ" in t or "ตาไม้" in t:
             return "ทำความสะอาดลูกกลิ้งและตรวจสิ่งปนเปื้อน"
-        if "แกรม" in t or "หน้ากว้าง" in t:
-            return "สอบเทียบเครื่องชั่ง/Trim และยืนยันแผน sampling"
-        if "Bursting" in t:
-            return "ทบทวนสูตร/ไฟเบอร์/เคมี และแนวโน้ม Lab"
-        if "ความชื้น" in t or "Cobb" in t:
-            return "ควบคุม RH โกดัง/ซีลกันชื้น และโปรไฟล์อบ"
-        if "แกนเบี้ยว" in t or "ม้วนหย่อน" in t:
-            return "ตรวจแกน/core plug/tension cut-over และวิธีแพ็ค"
-        if "สีตก" in t:
-            return "ปรับโค้ทติ้ง/หมึก ตรวจความหนาเคลือบและการอบแห้ง"
-        return "กำหนดแผนตรวจจุดวิกฤตในไลน์ + sampling เพิ่มเติมช่วงรับเข้า"
+        if "ยับ" in t or "ม้วน" in t:
+            return "ตรวจ tension cut-over และวิธีแพ็ค"
+        if "กระดาษแตก" in t or "กระดาษด่าง" in t:
+            return "ตรวจสอบคุณภาพเยื่อและการอบแห้ง"
+        if "Carlender" in t:
+            return "ทำความสะอาดลูกกลิ้ง Calender และตรวจแรงกด"
+        return "ตรวจสอบจุดวิกฤตในไลน์ผลิตและเพิ่ม sampling"
 
-    if "Defect" in df.columns:
+    if "สิ่งที่ไม่เป็นไปตามข้อกำหนด" in df.columns:
+        df["Defect"] = df["สิ่งที่ไม่เป็นไปตามข้อกำหนด"]
         df["Advice"] = df["Defect"].apply(advise_for)
 
     st.subheader("📌 สรุปภาพรวม")
@@ -91,9 +86,9 @@ def process_claim_roll(df):
     col3.metric("ประเภทข้อบกพร่องที่พบ", df["Defect"].nunique() if "Defect" in df.columns else 0)
 
     st.subheader("📅 แนวโน้มรายเดือน (จำนวนเคส) แยกตาม SUP")
-    if "MonthKey" in df.columns and "SUP" in df.columns:
-        monthly_sup = df.groupby(["MonthKey", "SUP"]).size().reset_index(name="Count")
-        fig = px.line(monthly_sup, x="MonthKey", y="Count", color="SUP", markers=True)
+    if "MONTH" in df.columns and "SUP" in df.columns:
+        monthly_sup = df.groupby(["MONTH", "SUP"]).size().reset_index(name="Count")
+        fig = px.line(monthly_sup, x="MONTH", y="Count", color="SUP", markers=True)
         st.plotly_chart(fig, use_container_width=True)
 
     st.subheader("💡 คำแนะนำอัตโนมัติ (Advisor)")
@@ -103,17 +98,58 @@ def process_claim_roll(df):
 
     st.subheader("📥 Export ข้อมูล")
     excel_data = to_excel(df)
-    st.download_button("ดาวน์โหลด Excel", excel_data, "claim_roll.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    st.download_button("ดาวน์โหลด Excel", excel_data, "claim_sheet.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
     pdf_data = generate_pdf(df)
-    st.download_button("ดาวน์โหลด PDF", pdf_data, "claim_roll.pdf", mime="application/pdf")
+    st.download_button("ดาวน์โหลด PDF", pdf_data, "claim_sheet.pdf", mime="application/pdf")
 
 # -----------------------------
-# ฟังก์ชัน: เคลมแผ่น (โครงสร้างพร้อมต่อยอด)
+# ฟังก์ชัน: เคลมแผ่น
 # -----------------------------
 def process_claim_sheet(df):
     st.title("📊 รายงานวิเคราะห์ข้อบกพร่องจากเคลมแผ่น")
-    st.info("⚙️ ยังไม่ได้กำหนด logic สำหรับเคลมแผ่น กรุณาส่งโครงสร้างคอลัมน์มาให้ผมช่วยเขียนต่อได้เลยครับ")
+
+    df = df.rename(columns={
+        "SUPPLIER": "SUP",
+        "สิ่งที่ไม่เป็นไปตามข้อกำหนด": "Defect",
+        "เดือน": "MONTH"
+    })
+
+    def advise_for(defect):
+        t = str(defect)
+        if "จุดดำ" in t or "ตาไม้" in t:
+            return "ทำความสะอาดลูกกลิ้งและตรวจสิ่งปนเปื้อน"
+        if "ยับ" in t or "ม้วน" in t:
+            return "ตรวจ tension cut-over และวิธีแพ็ค"
+        if "กระดาษแตก" in t or "กระดาษด่าง" in t:
+            return "ตรวจสอบคุณภาพเยื่อและการอบแห้ง"
+        if "Carlender" in t:
+            return "ทำความสะอาดลูกกลิ้ง Calender และตรวจแรงกด"
+        return "ตรวจสอบจุดวิกฤตในไลน์ผลิตและเพิ่ม sampling"
+
+    df["Advice"] = df["Defect"].apply(advise_for)
+
+    st.subheader("📌 สรุปภาพรวม")
+    col1, col2, col3 = st.columns(3)
+    col1.metric("จำนวนรายการข้อบกพร่อง", len(df))
+    col2.metric("ซัพพลายเออร์ที่เกี่ยวข้อง", df["SUP"].nunique())
+    col3.metric("ประเภทข้อบกพร่องที่พบ", df["Defect"].nunique())
+
+    st.subheader("📅 แนวโน้มรายเดือน (จำนวนเคส) แยกตาม SUP")
+    monthly_sup = df.groupby(["MONTH", "SUP"]).size().reset_index(name="Count")
+    fig = px.line(monthly_sup, x="MONTH", y="Count", color="SUP", markers=True)
+    st.plotly_chart(fig, use_container_width=True)
+
+    st.subheader("💡 คำแนะนำอัตโนมัติ (Advisor)")
+    advisor_unique = df[["SUP", "Defect", "Advice"]].drop_duplicates()
+    st.dataframe(advisor_unique, hide_index=True)
+
+    st.subheader("📥 Export ข้อมูล")
+    excel_data = to_excel(df)
+    st.download_button("ดาวน์โหลด Excel", excel_data, "claim_sheet.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+    pdf_data = generate_pdf(df)
+    st.download_button("ดาวน์โหลด PDF", pdf_data, "claim_sheet.pdf", mime="application/pdf")
 
 # -----------------------------
 # Export Excel / PDF
@@ -126,11 +162,30 @@ def to_excel(df):
     return output.getvalue()
 
 def generate_pdf(df):
+    from fpdf import FPDF
+
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
+
+    # หัวเรื่อง
     pdf.cell(200, 10, txt="รายงานวิเคราะห์ข้อบกพร่อง", ln=True, align="C")
+    pdf.ln(10)
+
+    # ตรวจว่ามีคอลัมน์ที่ต้องใช้หรือไม่
+    required_cols = ["SUP", "Defect", "Advice"]
+    for col in required_cols:
+        if col not in df.columns:
+            pdf.cell(200, 10, txt=f"⚠️ ไม่พบคอลัมน์ '{col}' ในข้อมูล", ln=True)
+            return pdf.output(dest="S").encode("latin-1")
+
+    # แสดงข้อมูลทีละแถว
     for i, row in df.iterrows():
-        line = f"{row.get('SUP','')} - {row.get('Defect','')}"
-        pdf.cell(200, 10, txt=line, ln=True)
+        sup = str(row.get("SUP", "")).strip()
+        defect = str(row.get("Defect", "")).strip()
+        advice = str(row.get("Advice", "")).strip()
+
+        line = f"SUP: {sup} | Defect: {defect} | Advice: {advice}"
+        pdf.multi_cell(0, 10, txt=line)
+
     return pdf.output(dest="S").encode("latin-1")
