@@ -358,36 +358,3 @@ if uploaded_file:
     def escape_html(s):
         """Escape อักขระพิเศษ ป้องกัน HTML injection"""
         return html.escape(str(s))
-
-# -----------------------------
-# Logo + Credit
-# -----------------------------
-import streamlit as st
-
-# สร้าง 2 คอลัมน์: ซ้าย = โลโก้, ขวา = เครดิต
-col1, col2 = st.columns([1, 3])
-
-with col1:
-    st.image("Logo.png", width=120)   # 👈 ปรับขนาดโลโก้ได้ตามต้องการ
-
-with col2:
-    st.markdown(
-        """
-        <div style="padding-top:30px; font-size:18px; font-weight:bold;">
-            Powered by <span style="color:#d62728;">The Beyonder RM</span>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-
-
-
-
-
-
-
-
-
-
