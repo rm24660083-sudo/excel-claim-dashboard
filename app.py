@@ -172,10 +172,27 @@ if uploaded_file:
     else:
         st.warning("⚠️ ไม่พบคอลัมน์ Defect ในไฟล์")
 
-    st.subheader("📅 แนวโน้มรายเดือน (จำนวนเคส) แยกตาม SUP")
-    monthly_sup = df.groupby(["MONTH", "SUP"]).size().reset_index(name="Count")
-    fig = px.line(monthly_sup, x="MONTH", y="Count", color="SUP", markers=True)
-    st.plotly_chart(fig, use_container_width=True)
+    # -----------------------------
+    # Monthly Trend
+    # -----------------------------
+    st.subheader("📅 แนวโน้มรายเดือน (จำนวนเคส)")
+    if "MonthKey" in df.columns:
+        monthly = (
+            df.groupby("MonthKey")
+              .size()
+              .reset_index(name="Count")
+              .sort_values("MonthKey")
+        )
+        fig3 = px.line(
+            monthly,
+            x="MonthKey",
+            y="Count",
+            markers=True,
+            title="จำนวน defect รายเดือน"
+        )
+        st.plotly_chart(fig3, use_container_width=True)
+    else:
+        st.warning("⚠️ ไม่พบคอลัมน์ MonthKey")
 
     # -----------------------------
     # Top Defect by Supplier (go.Bar เวอร์ชันแท่งหนา)
@@ -363,4 +380,3 @@ if uploaded_file:
     def escape_html(s):
         """Escape อักขระพิเศษ ป้องกัน HTML injection"""
         return html.escape(str(s))
-
