@@ -84,3 +84,44 @@ if uploaded_file:
     st.subheader("💡 คำแนะนำอัตโนมัติ")
     advisor_unique = df[["SUP", "Defect", "Advice"]].drop_duplicates()
     st.dataframe(advisor_unique, hide_index=True)
+
+    # -----------------------------
+    # 🔹 วิเคราะห์ SUP + เกรดแกรม + Defect รายเดือน/Quarter
+    # -----------------------------
+    st.subheader("📊 วิเคราะห์ SUP + เกรดแกรม + Defect รายเดือน/Quarter")
+
+    # รายเดือน
+    monthly_sup_grade = (
+        df.groupby(["MonthKey", "SUP", "Grade", "Defect"])
+          .size()
+          .reset_index(name="จำนวนเคส")
+          .sort_values(["MonthKey", "SUP", "Grade", "Defect"])
+    )
+    st.markdown("**รายเดือน:**")
+    st.dataframe(monthly_sup_grade, hide_index=True)
+
+    # ราย Quarter
+    quarterly_sup_grade = (
+        df.groupby(["Quarter", "SUP", "Grade", "Defect"])
+          .size()
+          .reset_index(name="จำนวนเคส")
+          .sort_values(["Quarter", "SUP", "Grade", "Defect"])
+    )
+    st.markdown("**ราย Quarter:**")
+    st.dataframe(quarterly_sup_grade, hide_index=True)
+
+    # -----------------------------
+    # 🔹 กราฟช่วยมองภาพรวม
+    # -----------------------------
+    st.subheader("📈 แนวโน้มจำนวนเคสแยกตาม SUP และ Grade")
+
+    fig_sup_grade = px.bar(
+        quarterly_sup_grade,
+        x="SUP",
+        y="จำนวนเคส",
+        color="Grade",
+        facet_col="Quarter",
+        text="Defect",
+        title="จำนวนเคสต่อ SUP + Grade (ราย Quarter)"
+    )
+    st.plotly_chart(fig_sup_grade, use_container_width=True)
