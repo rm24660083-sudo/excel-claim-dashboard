@@ -69,6 +69,30 @@ if uploaded_file:
     defect_grade = df.groupby(["Defect", "Grade", "SUP"]).size().reset_index(name="จำนวนเคส")
     st.dataframe(defect_grade, hide_index=True)
 
+        # -----------------------------
+    # 🧩 สัดส่วนประเภทข้อบกพร่อง (Top 12)
+    # -----------------------------
+    st.subheader("🧩 สัดส่วนประเภทข้อบกพร่อง (Top 12)")
+
+    defect_count = (
+        df.groupby("Defect")
+          .size()
+          .reset_index(name="Count")
+          .sort_values("Count", ascending=False)
+          .head(12)
+    )
+
+    fig_pie = px.pie(
+        defect_count,
+        names="Defect",
+        values="Count",
+        title="สัดส่วนประเภทข้อบกพร่อง (Top 12)",
+        hole=0.3  # ถ้าอยากให้เป็น donut chart
+    )
+
+    fig_pie.update_traces(textposition="inside", textinfo="percent+label")
+    st.plotly_chart(fig_pie, use_container_width=True)
+
     # 4) แนวโน้มรายเดือน
     st.subheader("📅 แนวโน้มรายเดือน (จำนวนเคส) แยกตาม SUP")
 
