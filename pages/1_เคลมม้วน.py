@@ -179,10 +179,40 @@ if uploaded_file:
 
         st.success(advice)
 
-    # -----------------------------
-    # 📈 Forecasting เดือนถัดไป
+        # -----------------------------
+    # 📈 การพยากรณ์ปัญหาเดือนถัดไป
     # -----------------------------
     st.subheader("📈 การพยากรณ์ปัญหาเดือนถัดไป")
 
     monthly = (
-        df.groupby(["
+        df.groupby(["MonthKey", "SUP", "Defect"])
+          .size()
+          .reset_index(name="จำนวนเคส")
+    )
+
+    forecast_results = []
+
+    for (sup, defect), group in monthly.groupby(["SUP", "Defect"]):
+        ts = group.set_index("MonthKey")["จำนวนเคส"]
+        ts.index = pd.to_datetime(ts.index + "-01")  # แปลงเป็น datetime
+        ts = ts.sort_index().asfreq("MS").fillna(0)
+
+        if len(ts) >= 3:
+            from statsmodels.tsa.holtwinters import ExponentialSmoothing
+            model = ExponentialSmoothing(ts, trend="add", seasonal=None)
+            fit = model.fit()
+            pred = fit.forecast(1)
+            forecast_results.append([sup, defect, int(pred.values[0])])
+
+    forecast_df = pd.DataFrame(forecast_results, columns=["SUP", "Defect", "คาดการณ์เดือนหน้า"])
+    st.dataframe(forecast_df, hide_index=True)
+
+    if not forecast_df.empty:
+        fig = px.bar(
+            forecast_df,
+            x="SUP",
+            y="คาดการณ์เดือนหน้า",
+            color="Defect",
+            title="📊 คาดการณ์จำนวนปัญหา SUP + Defect เดือนถัดไป"
+        )
+        st.plotly_chart(fig, use_container_width=True)
